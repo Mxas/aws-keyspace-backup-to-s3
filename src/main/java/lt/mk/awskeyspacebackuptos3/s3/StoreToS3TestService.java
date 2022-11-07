@@ -15,22 +15,29 @@ public class StoreToS3TestService {
 	}
 
 	public void test() {
-		writeToS3MultyPart();
+		testPutObject();
+		writeToS3MultiPart();
 	}
 
 	private void testPutObject() {
 		client.initClient();
-		client.storeSimpleFile();
+		try {
+			client.storeSimpleFile();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
-	private void writeToS3MultyPart() {
+	private void writeToS3MultiPart() {
+		System.out.println("Running: writeToS3MultiPart");
 		client.initClient();
 		client.initMultipartUploader();
 		try {
 			uploader.upload(new ByteArrayInputStream("one,two,three\n".getBytes(StandardCharsets.UTF_8)));
 			uploader.waitFullComplete();
+			System.out.println("Successfully: writeToS3MultiPart");
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			e.printStackTrace();
 		}
 	}
 }

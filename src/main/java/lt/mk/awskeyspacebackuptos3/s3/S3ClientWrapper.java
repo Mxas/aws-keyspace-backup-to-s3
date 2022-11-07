@@ -51,8 +51,16 @@ public class S3ClientWrapper {
 
 
 	public void storeSimpleFile() {
-		s3Client.putObject(config.bucket, "storeSimpleFile_" + buildFileName(), new ByteArrayInputStream("one,two,three".getBytes(StandardCharsets.UTF_8)),
+		String fileNameThere = "storeSimpleFile_" + buildFileName();
+		System.out.println();
+		System.out.println("Running: storeSimpleFile");
+		System.out.println("File name: " + fileNameThere);
+		System.out.println("S3 bucket: " + config.bucket);
+		System.out.println();
+		s3Client.putObject(config.bucket, fileNameThere, new ByteArrayInputStream("one,two,three".getBytes(StandardCharsets.UTF_8)),
 				new ObjectMetadata());
+		System.out.println("Successfully: storeSimpleFile");
+
 	}
 
 	private String buildFileName() {
