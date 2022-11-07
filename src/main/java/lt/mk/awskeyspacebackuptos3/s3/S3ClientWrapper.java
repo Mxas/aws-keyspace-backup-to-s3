@@ -51,7 +51,7 @@ public class S3ClientWrapper {
 
 
 	public void storeSimpleFile() {
-		String fileNameThere = "storeSimpleFile_" + buildFileName();
+		String fileNameThere = buildFileName();
 		System.out.println();
 		System.out.println("Running: storeSimpleFile");
 		System.out.println("File name: " + fileNameThere);

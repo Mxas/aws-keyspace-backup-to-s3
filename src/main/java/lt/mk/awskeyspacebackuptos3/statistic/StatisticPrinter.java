@@ -1,6 +1,7 @@
 
 package lt.mk.awskeyspacebackuptos3.statistic;
 
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -8,6 +9,7 @@ public class StatisticPrinter {
 
 	public final StatisticProvider statisticProvider;
 	private Timer timer;
+	private String lastPrintedLine;
 
 	public StatisticPrinter(StatisticProvider statisticProvider) {
 		this.statisticProvider = statisticProvider;
@@ -34,7 +36,15 @@ public class StatisticPrinter {
 	}
 
 	private void printLine() {
-		System.out.print("\r" + statisticProvider.formatLine());
+		String line = statisticProvider.formatLine();
+		printInSameLIne(line);
+	}
+
+	private void printInSameLIne(String line) {
+		if (!Objects.equals(this.lastPrintedLine, line)) {
+			this.lastPrintedLine = line;
+			System.out.print("\r" + line);
+		}
 	}
 
 	public void close() {
