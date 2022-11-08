@@ -33,8 +33,22 @@ public class StatisticProvider {
 	}
 
 
-	public String headerLine() {
-		return dataFetcherH() + memoryQueue() + s3() + fs() + "|";
+	public String headerLine1() {
+		if (fsNotActive()) {
+			return String.format("|%42s|%34s|%44s|",
+					"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ");
+		}
+		return String.format("|%42s|%34s|%44s|%19s|",
+				"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ", "Storing To File  ");
+	}
+
+	private boolean fsNotActive() {
+		return !storeToFile.isThreadActive() && storeToFile.getConsumedStreamCount() < 1;
+	}
+
+
+	public String headerLine2() {
+		return dataFetcherH() + memoryQueueH() + s3H() + fsH() + "|";
 	}
 
 	public String dataLine() {
@@ -42,38 +56,57 @@ public class StatisticProvider {
 	}
 
 	private String dataFetcherH() {
-		return String.format("|%12s|%10s|%12s",
-				"Data Fetching", "Page No", "Total Lines"
+		return String.format("|%6s|%9s|%12s|%12s",
+				"Active", "Page No ", "Total Lines ", "Rate p/s"
 		);
 	}
 
 	private String dataFetcher() {
-		return String.format("\u001b[32m|Data Fetching %s|Page No %d|Total Lines %d|Rate %.2f\u001b[39m",
+		return String.format("\u001b[32m|%6s|%9d|%12d|%12.2f\u001b[39m",
 				dataFetcher.isThreadActive(), dataFetcher.getPage(), dataFetcher.getLinesRead(), calcRate()
 		);
 	}
 
+	private String memoryQueueH() {
+		return String.format("|%6s|%6s|%11s|%8s",
+				"Queue", "Stream", "Lines Count", "Size B"
+		);
+	}
+
 	private String memoryQueue() {
-		return String.format("\u001b[33m|Queue size %d|Streams returned %d|Total Lines %d| Total size %s\u001b[39m",
+		return String.format("\u001b[33m|%6d|%6d|%11d|%8s\u001b[39m",
 				queue.size(), streamProvider.getStreamCount(), streamProvider.getLinceCount(), byteSize(streamProvider.getBytesCount())
 		);
 	}
 
+	private String s3H() {
+		return String.format("|%6s|%8s|%9s|%10s|%7s",
+				"Active", "Consumed", "Last", "Total", "Part No"
+		);
+	}
+
 	private String s3() {
-		if (!storeToS3Service.isThreadActive() && storeToS3Service.getConsumedStreamsCount() < 1) {
-			return "";
-		}
-		return String.format("\u001b[31m|S3 storing %s|Consumed Streams %d|Last Consumed Stream Size %s|Total size %s|Part No %d\u001b[39m",
+		return String.format("\u001b[31m|%8s|%6d|%9s|%10s|%7d\u001b[39m",
 				storeToS3Service.isThreadActive(), storeToS3Service.getConsumedStreamsCount(), byteSize(storeToS3Service.getLastConsumedStreamSize()),
 				byteSize(storeToS3Service.getConsumedBytes()), s3ClientWrapper.getPartNumber()
 		);
 	}
 
-	private String fs() {
-		if (!storeToFile.isThreadActive() && storeToFile.getConsumedStreamCount() < 1) {
+	private String fsH() {
+		if (fsNotActive()) {
 			return "";
 		}
-		return String.format("\u001b[31m|Storing to file %s|Consumed Stream Count %d\u001b[39m",
+		return String.format("|%6s|%12s",
+				"Active", "Consumed"
+		);
+	}
+
+
+	private String fs() {
+		if (fsNotActive()) {
+			return "";
+		}
+		return String.format("\u001b[31m|%6s|%12d\u001b[39m",
 				storeToFile.isThreadActive(), storeToFile.getConsumedStreamCount()
 		);
 	}

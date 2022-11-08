@@ -64,7 +64,7 @@ public class SingletonManager {
 			e.printStackTrace();
 		}
 
-		this.statisticPrinter.iniStatPrinting();
+//		this.statisticPrinter.iniStatPrinting();
 	}
 
 	public ConfigurationHolder getConfigurationHolder() {
@@ -128,5 +128,9 @@ public class SingletonManager {
 
 	public StoreToS3Service getStoreToS3Service() {
 		return storeToS3Service;
+	}
+
+	public StatisticPrinter getStatisticPrinter() {
+		return statisticPrinter;
 	}
 }
