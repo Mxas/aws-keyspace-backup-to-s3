@@ -81,8 +81,8 @@ public class SingletonManager {
 
 	public void close() {
 		Optional.ofNullable(cqlSessionProvider).ifPresent(CqlSessionProvider::close);
+		Optional.ofNullable(dataFetcher).ifPresent(DataFetcher::close);
 		Optional.ofNullable(statisticPrinter).ifPresent(StatisticPrinter::close);
-
 	}
 
 	public QueryBuilder getQueryBuilder() {

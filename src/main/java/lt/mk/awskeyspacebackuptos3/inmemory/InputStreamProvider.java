@@ -34,15 +34,14 @@ public class InputStreamProvider {
 			PrintWriter writer = new PrintWriter(bufferOutputStream);
 			String line;
 
-			do {
-				this.streamCount++;
+			this.streamCount++;
 
+			do {
 				line = queue.poll();
 				if (line != null) {
 					writer.println(line);
 					this.linceCount++;
 				}
-				this.bytesCount = this.bytesCount + bufferOutputStream.size();
 				if (bufferOutputStream.size() > SIZE) {
 					break;
 				}
@@ -50,6 +49,7 @@ public class InputStreamProvider {
 			if (line == null) {
 				System.out.println("Queue is empty exiting polling");
 			}
+			this.bytesCount = this.bytesCount + bufferOutputStream.size();
 			return new ByteArrayInputStream(bufferOutputStream.toByteArray());
 		} catch (Exception e) {
 			throw new RuntimeException(e);

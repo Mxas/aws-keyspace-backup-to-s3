@@ -36,7 +36,7 @@ public class StatisticPrinter {
 	}
 
 	private void printLine() {
-		String line = statisticProvider.formatLine();
+		String line = statisticProvider.dataLine();
 		printInSameLIne(line);
 	}
 

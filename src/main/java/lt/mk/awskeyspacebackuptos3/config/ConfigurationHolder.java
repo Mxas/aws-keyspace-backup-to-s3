@@ -31,6 +31,8 @@ public class ConfigurationHolder {
 		public String keyspace;
 		public String table;
 		public String query;
+
+		public int pagesToSkip = 0;
 	}
 
 	public class S3 {

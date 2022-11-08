@@ -1,8 +1,12 @@
 package lt.mk.awskeyspacebackuptos3.keyspace;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -10,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
@@ -18,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class DataFetcher {
 
+	private static final Logger LOG = Logger.getLogger(DataFetcher.class.getName());
 	public static final String DELIMITER = ",";
 	private final AwsKeyspaceConf conf;
 	private final QueryBuilder queryBuilder;
@@ -26,7 +32,7 @@ public class DataFetcher {
 	private final DataQueue queue;
 	private final LongAdder linesRead;
 	private CountDownLatch latch;
-	private AtomicInteger page;
+	private final AtomicInteger page;
 	private Thread thread;
 
 	public DataFetcher(AwsKeyspaceConf conf, QueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader, DataQueue queue) {
@@ -55,6 +61,10 @@ public class DataFetcher {
 			put(StringUtils.join(head.toArray(), DELIMITER));
 
 			thread = new Thread(() -> {
+//				PreparedStatement statement = sessionProvider.getSession().prepare(query);
+//				SimpleStatement statement = SimpleStatement.newInstance(query).setPageSize(80_000);
+//				BatchStatement statement = BatchStatement.newInstance(BatchType.UNLOGGED).setPageSize(80_000);
+//				CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(statement);
 				CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(query);
 				futureRs.whenComplete((rs, t) -> putInQueuePage(rs, t, head));
 
@@ -71,12 +81,16 @@ public class DataFetcher {
 		this.latch = new CountDownLatch(1);
 	}
 
-	private void putInQueuePage(AsyncResultSet rs, Throwable t, List<String> head) {
+	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
+
+		checkError(error);
 		page.incrementAndGet();
 		try {
-			for (Row row : rs.currentPage()) {
-				String line = buildCsvLine(row, head);
-				put(line);
+			if (conf.pagesToSkip < page.get()) {
+				for (Row row : rs.currentPage()) {
+					String line = buildCsvLine(row, head);
+					put(line);
+				}
 			}
 			if (rs.hasMorePages()) {
 				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
@@ -114,6 +128,14 @@ public class DataFetcher {
 	public int iterateAndCountAll() {
 		async();
 		return linesRead.intValue();
+	}
+
+	private void checkError(Throwable error) {
+		if (error != null) {
+			System.out.println("Data fetching failed in page: " + page.get());
+			System.out.println(error.getMessage());
+			throw new RuntimeException("Data fetching failed in page: " + page.get(), error);
+		}
 	}
 
 
@@ -167,13 +189,13 @@ public class DataFetcher {
 		return linesRead.longValue();
 	}
 
-	public void close(){
-		try{
-			if (isThreadActive()){
+	public void close() {
+		try {
+			if (isThreadActive()) {
 				thread.interrupt();
 				thread.stop();
 			}
-		}catch (Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

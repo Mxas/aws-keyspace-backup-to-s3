@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 public class DataQueue {
 
 
-	public static final int CAPACITY = 100 * 1000;
+	public static final int CAPACITY = 500 * 1000;
 	private final ArrayBlockingQueue<String> queue;
 
 	public DataQueue() {
