@@ -20,4 +20,13 @@ public abstract class ActionInThread extends ActionView {
 	}
 
 	abstract void execute();
+
+	@Override
+	public void display() {
+		this.println();
+		this.println(this.runningTitle);
+		this.executeCustomAction();
+//		this.pause();
+		this.goBack();
+	}
 }

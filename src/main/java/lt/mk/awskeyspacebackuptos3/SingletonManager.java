@@ -50,8 +50,8 @@ public class SingletonManager {
 			this.queryBuilder = new QueryBuilder(configurationHolder.keyspace);
 			this.tableHeaderReader = new TableHeaderReader(cqlSessionProvider, queryBuilder);
 			this.testQueryHelper = new TestQueryHelper(queryBuilder, cqlSessionProvider);
-			this.queue = new DataQueue();
-			this.streamProvider = new InputStreamProvider(queue);
+			this.queue = new DataQueue(configurationHolder.memory);
+			this.streamProvider = new InputStreamProvider(queue, configurationHolder.memory);
 			this.dataFetcher = new DataFetcher(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, queue);
 			this.storeToFile = new StoreToFile(configurationHolder.fs, this.streamProvider);
 			this.s3ClientWrapper = new S3ClientWrapper(configurationHolder.s3, configurationHolder.keyspace);

@@ -1,12 +1,8 @@
 package lt.mk.awskeyspacebackuptos3.keyspace;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -33,6 +29,7 @@ public class DataFetcher {
 	private final LongAdder linesRead;
 	private CountDownLatch latch;
 	private final AtomicInteger page;
+	private final AtomicInteger emptyPagesCounter;
 	private Thread thread;
 
 	public DataFetcher(AwsKeyspaceConf conf, QueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader, DataQueue queue) {
@@ -43,6 +40,7 @@ public class DataFetcher {
 		this.queue = queue;
 		this.linesRead = new LongAdder();
 		this.page = new AtomicInteger(0);
+		this.emptyPagesCounter = new AtomicInteger(0);
 	}
 
 	public void startReading() {
@@ -78,6 +76,7 @@ public class DataFetcher {
 	private void init() {
 		this.linesRead.reset();
 		this.page.set(0);
+		this.emptyPagesCounter.set(0);
 		this.latch = new CountDownLatch(1);
 	}
 
@@ -87,12 +86,17 @@ public class DataFetcher {
 		page.incrementAndGet();
 		try {
 			if (conf.pagesToSkip < page.get()) {
+				if (rs.remaining() == 0) {
+					emptyPagesCounter.incrementAndGet();
+				} else {
+					emptyPagesCounter.set(0);
+				}
 				for (Row row : rs.currentPage()) {
 					String line = buildCsvLine(row, head);
 					put(line);
 				}
 			}
-			if (rs.hasMorePages()) {
+			if (emptyPagesCounter.intValue() < conf.countOnEmptyPageReturnsFinish && rs.hasMorePages()) {
 				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
 			} else {
 				latch.countDown();

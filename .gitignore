@@ -38,3 +38,6 @@ out/
 
 ### macOs ###
 .DS_Store
+
+
+!build/libs/keystore-backup.jar

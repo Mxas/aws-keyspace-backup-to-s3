@@ -35,10 +35,10 @@ public class StatisticProvider {
 
 	public String headerLine1() {
 		if (fsNotActive()) {
-			return String.format("|%42s|%34s|%44s|",
+			return String.format("|%42s|%37s|%44s|",
 					"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ");
 		}
-		return String.format("|%42s|%34s|%44s|%19s|",
+		return String.format("|%42s|%37s|%44s|%19s|",
 				"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ", "Storing To File  ");
 	}
 
@@ -68,13 +68,13 @@ public class StatisticProvider {
 	}
 
 	private String memoryQueueH() {
-		return String.format("|%6s|%6s|%11s|%8s",
+		return String.format("|%6s|%6s|%11s|%11s",
 				"Queue", "Stream", "Lines Count", "Size B"
 		);
 	}
 
 	private String memoryQueue() {
-		return String.format("\u001b[33m|%6d|%6d|%11d|%8s\u001b[39m",
+		return String.format("\u001b[33m|%6d|%6d|%11d|%11s\u001b[39m",
 				queue.size(), streamProvider.getStreamCount(), streamProvider.getLinceCount(), byteSize(streamProvider.getBytesCount())
 		);
 	}
@@ -86,7 +86,7 @@ public class StatisticProvider {
 	}
 
 	private String s3() {
-		return String.format("\u001b[31m|%8s|%6d|%9s|%10s|%7d\u001b[39m",
+		return String.format("\u001b[31m|%6s|%8d|%9s|%10s|%7d\u001b[39m",
 				storeToS3Service.isThreadActive(), storeToS3Service.getConsumedStreamsCount(), byteSize(storeToS3Service.getLastConsumedStreamSize()),
 				byteSize(storeToS3Service.getConsumedBytes()), s3ClientWrapper.getPartNumber()
 		);

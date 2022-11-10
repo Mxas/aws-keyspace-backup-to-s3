@@ -2,15 +2,14 @@ package lt.mk.awskeyspacebackuptos3.inmemory;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.InMemory;
 
 public class DataQueue {
 
-
-	public static final int CAPACITY = 500 * 1000;
 	private final ArrayBlockingQueue<String> queue;
 
-	public DataQueue() {
-		queue = new ArrayBlockingQueue<>(CAPACITY);
+	public DataQueue(InMemory config) {
+		queue = new ArrayBlockingQueue<>(config.queueSize);
 	}
 
 	public String poll() {

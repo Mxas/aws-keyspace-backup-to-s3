@@ -49,6 +49,7 @@ public class StatisticPrinter {
 	private void printHeader() {
 		System.out.println();
 		String headerLine1 = statisticProvider.headerLine1();
+		space(headerLine1.length());
 		System.out.println(headerLine1);
 		space(headerLine1.length());
 		System.out.println(statisticProvider.headerLine2());
@@ -81,7 +82,9 @@ public class StatisticPrinter {
 
 	public void close() {
 		try {
-			timer.cancel();
+			if (timer != null) {
+				timer.cancel();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

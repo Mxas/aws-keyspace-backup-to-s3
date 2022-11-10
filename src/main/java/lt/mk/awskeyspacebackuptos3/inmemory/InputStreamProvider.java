@@ -5,26 +5,29 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.InMemory;
 
 public class InputStreamProvider {
 
 
-	final int SIZE = 10 * Constants.MB;
+	static int SIZE = 200 * Constants.MB;
 
 	private final DataQueue queue;
-
+	private final InMemory config;
 	private int linceCount;
 	private int streamCount;
 	private long bytesCount;
 
-	public InputStreamProvider(DataQueue queue) {
+	public InputStreamProvider(DataQueue queue, InMemory config) {
 		this.queue = queue;
+		this.config = config;
 	}
 
 	public void init() {
 		this.linceCount = 0;
 		this.streamCount = 0;
 		this.bytesCount = 0;
+		SIZE = config.singleStreamSizeInMB * Constants.MB;
 	}
 
 	public InputStream getStream() {

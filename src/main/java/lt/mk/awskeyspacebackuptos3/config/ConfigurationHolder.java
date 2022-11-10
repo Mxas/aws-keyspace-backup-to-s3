@@ -8,6 +8,7 @@ public class ConfigurationHolder {
 	public Csv csv = new Csv();
 	public Fs fs = new Fs();
 	public S3 s3 = new S3();
+	public InMemory memory = new InMemory();
 
 
 	public class Menu {
@@ -33,6 +34,16 @@ public class ConfigurationHolder {
 		public String query;
 
 		public int pagesToSkip = 0;
+		public int countOnEmptyPageReturnsFinish = 10;
+
+
+	}
+
+
+	public class InMemory {
+
+		public int queueSize = 500_000;
+		public int singleStreamSizeInMB = 200;
 	}
 
 	public class S3 {

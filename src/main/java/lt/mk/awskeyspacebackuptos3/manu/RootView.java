@@ -7,14 +7,11 @@ public class RootView extends MenuView {
 
 	public RootView(SingletonManager manager) {
 		super("Welcome to AWS Keyspace Backups Creation Tool.", "");
-		addMenuItem(new AwsKeyspaceConfigAction(manager.getConfigurationHolder(), manager.getCqlSessionProvider()));
-		addMenuItem(new AwsKeyspaceTestView(manager.getTestQueryHelper()));
-		addMenuItem(new SaveToTestS3Action(manager.getStoreToS3TestService()));
-		addMenuItem(new AwsKeyspaceHeaderView(manager.getTableHeaderReader()));
-		addMenuItem(new AwsKeyspaceFetchCountView(manager.getDataFetcher()));
+		addMenuItem(new ConfigAction(manager.getConfigurationHolder()));
+		addMenuItem(new TestingMenuView(manager));
 		addMenuItem(new AwsKeyspaceFetchDataAction(manager.getDataFetcher()));
-		addMenuItem(new SaveToFileAction(manager.getStoreToFile()));
 		addMenuItem(new SaveToS3Action(manager.getStoreToS3Service()));
+		addMenuItem(new SaveToFileAction(manager.getStoreToFile()));
 		addMenuItem(new StatisticsView(manager.getStatisticPrinter()));
 	}
 }

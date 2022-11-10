@@ -7,7 +7,7 @@ public class AwsKeyspaceFetchDataAction extends ActionInThread {
 	private final DataFetcher dataFetcher;
 
 	public AwsKeyspaceFetchDataAction(DataFetcher dataFetcher) {
-		super("Fetching data from keyspace", "Start AWS Keyspace data fetching");
+		super("Fetching data from keyspace", "Start 'AWS Keyspace data fetching' thread");
 		this.dataFetcher = dataFetcher;
 	}
 
