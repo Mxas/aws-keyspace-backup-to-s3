@@ -54,7 +54,7 @@ public class DataFetcher {
 			List<String> head = tableHeaderReader.readAndSetHeaders();
 			System.out.println("Found headers: " + head);
 			String query = queryBuilder.getQueryForDataLoading();
-			System.out.println("Using query: " + query);
+			System.out.println("Build query: " + query);
 
 			put(StringUtils.join(head.toArray(), DELIMITER));
 
@@ -82,7 +82,7 @@ public class DataFetcher {
 
 	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
 
-		checkError(error);
+		KeyspaceUtil.checkError(error, page.get());
 		page.incrementAndGet();
 		try {
 			if (conf.pagesToSkip < page.get()) {
@@ -129,19 +129,6 @@ public class DataFetcher {
 		return value == null ? null : value.toString();
 	}
 
-	public int iterateAndCountAll() {
-		async();
-		return linesRead.intValue();
-	}
-
-	private void checkError(Throwable error) {
-		if (error != null) {
-			System.out.println("Data fetching failed in page: " + page.get());
-			System.out.println(error.getMessage());
-			throw new RuntimeException("Data fetching failed in page: " + page.get(), error);
-		}
-	}
-
 
 	private void increment() {
 		linesRead.increment();
@@ -150,34 +137,12 @@ public class DataFetcher {
 //		}
 	}
 
-	private void async() {
-		linesRead.reset();
-		latch = new CountDownLatch(1);
-
-		CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(queryBuilder.getQuery());
-
-		futureRs.whenComplete(this::processRowsAsync);
-
-		waitLatch();
-	}
 
 	private void waitLatch() {
 		try {
 			latch.await(5, TimeUnit.DAYS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}
-	}
-
-
-	void processRowsAsync(AsyncResultSet rs, Throwable error) {
-		int count = rs.remaining();
-		linesRead.add(count);
-		System.out.println("Count: " + linesRead.intValue());
-		if (rs.hasMorePages()) {
-			rs.fetchNextPage().whenComplete(this::processRowsAsync);
-		} else {
-			latch.countDown();
 		}
 	}
 

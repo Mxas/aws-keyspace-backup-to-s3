@@ -36,10 +36,10 @@ public class StatisticProvider {
 	public String headerLine1() {
 		if (fsNotActive()) {
 			return String.format("|%42s|%37s|%44s|",
-					"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ");
+					"Data Fetching               ", "Memory Queue              ", "Aws S3 Storing              ");
 		}
 		return String.format("|%42s|%37s|%44s|%19s|",
-				"Data Fetching               ", "Memory Queue              ", "Aws S3 String               ", "Storing To File  ");
+				"Data Fetching               ", "Memory Queue              ", "Aws S3 Storing              ", "Storing To File  ");
 	}
 
 	private boolean fsNotActive() {

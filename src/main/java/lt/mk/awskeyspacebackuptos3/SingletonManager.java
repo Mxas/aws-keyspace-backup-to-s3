@@ -10,6 +10,7 @@ import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.DataFetcher;
 import lt.mk.awskeyspacebackuptos3.keyspace.QueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
+import lt.mk.awskeyspacebackuptos3.keyspace.TestCountHelper;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestQueryHelper;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
@@ -27,6 +28,7 @@ public class SingletonManager {
 	private TableHeaderReader tableHeaderReader;
 	private QueryBuilder queryBuilder;
 	private TestQueryHelper testQueryHelper;
+	private TestCountHelper testCountHelper;
 	private DataFetcher dataFetcher;
 	private DataQueue queue;
 	private StoreToFile storeToFile;
@@ -50,6 +52,7 @@ public class SingletonManager {
 			this.queryBuilder = new QueryBuilder(configurationHolder.keyspace);
 			this.tableHeaderReader = new TableHeaderReader(cqlSessionProvider, queryBuilder);
 			this.testQueryHelper = new TestQueryHelper(queryBuilder, cqlSessionProvider);
+			this.testCountHelper = new TestCountHelper(queryBuilder, cqlSessionProvider, tableHeaderReader);
 			this.queue = new DataQueue(configurationHolder.memory);
 			this.streamProvider = new InputStreamProvider(queue, configurationHolder.memory);
 			this.dataFetcher = new DataFetcher(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, queue);
@@ -58,7 +61,7 @@ public class SingletonManager {
 			this.syncS3MultipartUploader = new SyncS3MultipartUploader(this.s3ClientWrapper);
 			this.storeToS3TestService = new StoreToS3TestService(s3ClientWrapper, this.syncS3MultipartUploader);
 			this.storeToS3Service = new StoreToS3Service(this.s3ClientWrapper, this.streamProvider, this.syncS3MultipartUploader);
-			this.statisticProvider = new StatisticProvider(queue,streamProvider,storeToFile,dataFetcher,storeToS3Service,s3ClientWrapper);
+			this.statisticProvider = new StatisticProvider(queue, streamProvider, storeToFile, dataFetcher, storeToS3Service, s3ClientWrapper);
 			this.statisticPrinter = new StatisticPrinter(statisticProvider);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -83,6 +86,7 @@ public class SingletonManager {
 		Optional.ofNullable(cqlSessionProvider).ifPresent(CqlSessionProvider::close);
 		Optional.ofNullable(dataFetcher).ifPresent(DataFetcher::close);
 		Optional.ofNullable(statisticPrinter).ifPresent(StatisticPrinter::close);
+		Optional.ofNullable(testCountHelper).ifPresent(TestCountHelper::close);
 	}
 
 	public QueryBuilder getQueryBuilder() {
@@ -132,5 +136,9 @@ public class SingletonManager {
 
 	public StatisticPrinter getStatisticPrinter() {
 		return statisticPrinter;
+	}
+
+	public TestCountHelper getTestCountHelper() {
+		return testCountHelper;
 	}
 }

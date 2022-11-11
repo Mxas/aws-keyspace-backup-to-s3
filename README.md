@@ -65,3 +65,16 @@ Tool arguments (optional)
       -s3b,--s3-bucket                   AWS S3 bucket.
       -s3f,--s3-folder                   AWS S3 folder (object prefix in bucket).
       -s3r,--s3-region                   AWS S3 bucket region.
+
+
+Example startup command with default arguments 
+
+      java -jar keystore-backup.jar \
+      -kq "select field,userid,deviceid,date,hour,minute,timestamp from my_keyspace.my_table where timestamp >= '2021-01-01T00:00:00.000Z' and timestamp < '2022-01-01T00:00:00.000Z' ALLOW FILTERING" \
+      -kf "keyspace_prd.conf" \
+      -kk my_keyspace \
+      -kt my_table \
+      -fs "v1_dump.csv" \
+      -s3b my-buscket \
+      -s3f my-data-2021-data \
+      -s3r us-east-1

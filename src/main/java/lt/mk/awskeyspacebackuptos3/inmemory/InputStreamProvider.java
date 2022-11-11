@@ -16,6 +16,7 @@ public class InputStreamProvider {
 	private final InMemory config;
 	private int linceCount;
 	private int streamCount;
+	private int currentStreamSize;
 	private long bytesCount;
 
 	public InputStreamProvider(DataQueue queue, InMemory config) {
@@ -45,7 +46,8 @@ public class InputStreamProvider {
 					writer.println(line);
 					this.linceCount++;
 				}
-				if (bufferOutputStream.size() > SIZE) {
+				this.currentStreamSize = bufferOutputStream.size();
+				if (this.currentStreamSize > SIZE) {
 					break;
 				}
 			} while (line != null);
@@ -53,6 +55,7 @@ public class InputStreamProvider {
 				System.out.println("Queue is empty exiting polling");
 			}
 			this.bytesCount = this.bytesCount + bufferOutputStream.size();
+			this.currentStreamSize = 0;
 			return new ByteArrayInputStream(bufferOutputStream.toByteArray());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -68,6 +71,6 @@ public class InputStreamProvider {
 	}
 
 	public long getBytesCount() {
-		return bytesCount;
+		return this.bytesCount + this.currentStreamSize;
 	}
 }

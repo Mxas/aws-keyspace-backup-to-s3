@@ -29,6 +29,13 @@ public class QueryBuilder {
 		return appendFrom("select * from ");
 	}
 
+	public String getCountingQuery(String field) {
+		if (StringUtils.isNotBlank(conf.query)) {
+			return "select " + field + conf.query.substring(conf.query.toLowerCase().indexOf(" from "));
+		}
+		return appendFrom("select " + field + " from ");
+	}
+
 	public String getQueryJson() {
 		if (StringUtils.isNotBlank(conf.query)) {
 			return conf.query;

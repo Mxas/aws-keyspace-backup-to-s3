@@ -16,7 +16,7 @@ public class StatisticsView extends ActionInThread {
 
 		statisticPrinter.iniStatPrinting();
 
-		this.prompt("Any symbol to cancel", String.class);
+		this.prompt("Press <Enter> to cancel", String.class);
 
 		statisticPrinter.close();
 
