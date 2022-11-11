@@ -14,6 +14,10 @@ public enum ConfigsDocs {
 			c -> c.keyspace.query),
 	kf("keyspace-config-file", "AWS Keyspace configuration file path.", (c, s) -> c.keyspace.awsKeyspaceDriverConfigPath = s,
 			c -> c.keyspace.awsKeyspaceDriverConfigPath),
+	kp("keyspace-pages-to-skip", "AWS Keyspace pages to skip.", (c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
+			c -> String.valueOf(c.keyspace.countOnEmptyPageReturnsFinish)),
+	ke("keyspace-emppty-to-finish", "AWS Keyspace returned empty pages assume as finished (max int).", (c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
+			c -> String.valueOf(c.keyspace.countOnEmptyPageReturnsFinish)),
 	imq("in-memory-queue", "In memory blocking queue rows size.", (c, s) -> c.memory.queueSize = Integer.parseInt(s), c -> String.valueOf(c.memory.queueSize)),
 	ims("in-memory-stream-size-mb", "In memory buffered stream size in MB.", (c, s) -> c.memory.singleStreamSizeInMB = Integer.parseInt(s), c -> String.valueOf(
 			c.memory.singleStreamSizeInMB)),

@@ -34,9 +34,7 @@ public class ConfigurationHolder {
 		public String query;
 
 		public int pagesToSkip = 0;
-		public int countOnEmptyPageReturnsFinish = 10;
-
-
+		public int countOnEmptyPageReturnsFinish = 999999;
 	}
 
 
