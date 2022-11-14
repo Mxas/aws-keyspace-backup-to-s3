@@ -30,6 +30,7 @@ public class DataFetcher {
 	private CountDownLatch latch;
 	private final AtomicInteger page;
 	private final AtomicInteger emptyPagesCounter;
+	private final AtomicInteger errorPagesCounter;
 	private Thread thread;
 
 	public DataFetcher(AwsKeyspaceConf conf, QueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader, DataQueue queue) {
@@ -41,6 +42,7 @@ public class DataFetcher {
 		this.linesRead = new LongAdder();
 		this.page = new AtomicInteger(0);
 		this.emptyPagesCounter = new AtomicInteger(0);
+		this.errorPagesCounter = new AtomicInteger(0);
 	}
 
 	public void startReading() {
@@ -77,14 +79,15 @@ public class DataFetcher {
 		this.linesRead.reset();
 		this.page.set(0);
 		this.emptyPagesCounter.set(0);
+		this.errorPagesCounter.set(0);
 		this.latch = new CountDownLatch(1);
 	}
 
 	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
 
-		KeyspaceUtil.checkError(error, page.get());
-		page.incrementAndGet();
 		try {
+			KeyspaceUtil.checkError(error, page.get(), rs);
+			page.incrementAndGet();
 			if (conf.pagesToSkip < page.get()) {
 				if (rs.remaining() == 0) {
 					emptyPagesCounter.incrementAndGet();
@@ -102,7 +105,12 @@ public class DataFetcher {
 				latch.countDown();
 			}
 		} catch (Exception e) {
+			errorPagesCounter.incrementAndGet();
 			e.printStackTrace();
+
+			if (errorPagesCounter.intValue() < 50 && rs != null && rs.hasMorePages()) {
+				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+			}
 			throw e;
 		}
 	}
