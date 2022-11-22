@@ -16,8 +16,9 @@ public class DataQueue {
 		try {
 			return queue.poll(1, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
+			e.printStackTrace();
 		}
+		return null;
 	}
 
 	public void put(String line) {

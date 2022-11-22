@@ -21,6 +21,7 @@ dependencies {
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
 
     implementation 'com.datastax.oss:java-driver-core:4.15.0'
+    implementation 'com.datastax.oss:java-driver-query-builder:4.15.0'
 
     implementation 'org.slf4j:slf4j-api:2.0.3'
     implementation 'org.slf4j:slf4j-simple:2.0.3'

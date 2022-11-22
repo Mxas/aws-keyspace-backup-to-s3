@@ -8,9 +8,9 @@ import org.apache.commons.lang3.StringUtils;
 public class TableHeaderReader {
 
 	private final CqlSessionProvider sessionProvider;
-	private final QueryBuilder queryBuilder;
+	private final KeyspaceQueryBuilder queryBuilder;
 
-	public TableHeaderReader(CqlSessionProvider sessionProvider, QueryBuilder queryBuilder) {
+	public TableHeaderReader(CqlSessionProvider sessionProvider, KeyspaceQueryBuilder queryBuilder) {
 		this.sessionProvider = sessionProvider;
 		this.queryBuilder = queryBuilder;
 	}

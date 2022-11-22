@@ -22,7 +22,7 @@ public class DataFetcher {
 	private static final Logger LOG = Logger.getLogger(DataFetcher.class.getName());
 	public static final String DELIMITER = ",";
 	private final AwsKeyspaceConf conf;
-	private final QueryBuilder queryBuilder;
+	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;
 	private final TableHeaderReader tableHeaderReader;
 	private final DataQueue queue;
@@ -33,7 +33,7 @@ public class DataFetcher {
 	private final AtomicInteger errorPagesCounter;
 	private Thread thread;
 
-	public DataFetcher(AwsKeyspaceConf conf, QueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader, DataQueue queue) {
+	public DataFetcher(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader, DataQueue queue) {
 		this.conf = conf;
 		this.queryBuilder = queryBuilder;
 		this.sessionProvider = sessionProvider;

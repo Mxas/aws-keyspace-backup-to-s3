@@ -13,13 +13,19 @@ public class CqlSessionProvider {
 
 	private final AwsKeyspaceConf conf;
 	private CqlSession session;
+	private CqlSession session2;
 
 	public CqlSessionProvider(AwsKeyspaceConf conf) throws NoSuchAlgorithmException {
 		this.conf = conf;
 	}
 
 	private void initSession() {
-		this.session = CqlSession.builder()
+		this.session = createSession();
+		this.session2 = createSession();
+	}
+
+	public CqlSession createSession() {
+		return CqlSession.builder()
 				.withConfigLoader(DriverConfigLoader.fromFile(getFile()))
 				.withSslContext(getaDefault())
 				.addTypeCodecs(TypeCodecs.ZONED_TIMESTAMP_UTC)
@@ -51,6 +57,14 @@ public class CqlSessionProvider {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		try {
+			if (session2 != null) {
+				session2.close();
+				session2 = null;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 
@@ -59,6 +73,14 @@ public class CqlSessionProvider {
 			initSession();
 		}
 		return session;
+	}
+
+
+	public CqlSession getSession2() {
+		if (session2 == null) {
+			initSession();
+		}
+		return session2;
 	}
 }
 

@@ -4,10 +4,10 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 
 public class TestQueryHelper {
 
-	private final QueryBuilder queryBuilder;
+	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;
 
-	public TestQueryHelper(QueryBuilder queryBuilder, CqlSessionProvider sessionProvider) {
+	public TestQueryHelper(KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider) {
 		this.queryBuilder = queryBuilder;
 		this.sessionProvider = sessionProvider;
 	}

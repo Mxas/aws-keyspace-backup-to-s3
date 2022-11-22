@@ -12,6 +12,7 @@ public class RootView extends MenuView {
 		addMenuItem(new AwsKeyspaceFetchDataAction(manager.getDataFetcher()));
 		addMenuItem(new SaveToS3Action(manager.getStoreToS3Service()));
 		addMenuItem(new SaveToFileAction(manager.getStoreToFile()));
+		addMenuItem(new AwsKeyspaceDeleteAction(manager.getDeleteInvoker()));
 		addMenuItem(new StatisticsView(manager.getStatisticPrinter()));
 	}
 }

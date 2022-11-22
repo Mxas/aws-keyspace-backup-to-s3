@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 public class TestCountHelper {
 
-	private final QueryBuilder queryBuilder;
+	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;
 
 	private final TableHeaderReader tableHeaderReader;
@@ -20,7 +20,7 @@ public class TestCountHelper {
 	private CountDownLatch latch;
 	private Thread thread;
 
-	public TestCountHelper(QueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader) {
+	public TestCountHelper(KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader) {
 		this.queryBuilder = queryBuilder;
 		this.sessionProvider = sessionProvider;
 		this.tableHeaderReader = tableHeaderReader;
