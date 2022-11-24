@@ -74,10 +74,10 @@ public class DeleteInvoker {
 
 			loadingQuery.start();
 			deletingQuery1.start();
-			deletingQuery2.start();
-			deletingQuery3.start();
-			deletingQuery4.start();
-			deletingQuery5.start();
+//			deletingQuery2.start();
+//			deletingQuery3.start();
+//			deletingQuery4.start();
+//			deletingQuery5.start();
 
 			logThread = new Thread(() -> {
 				while (true) {
@@ -244,8 +244,10 @@ public class DeleteInvoker {
 
 	private void stop(Thread thread) {
 		try {
-			thread.interrupt();
-			thread.stop();
+			if (thread != null) {
+				thread.interrupt();
+				thread.stop();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

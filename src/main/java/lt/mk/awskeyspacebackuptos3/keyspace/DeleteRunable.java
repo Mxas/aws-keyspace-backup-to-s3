@@ -57,7 +57,7 @@ class DeleteRunable implements Runnable {
 					break;
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				System.out.println(e.getMessage());
 			}
 //			try {
 //				latch.await();
