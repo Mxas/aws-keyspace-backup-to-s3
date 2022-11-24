@@ -1,20 +1,11 @@
 package lt.mk.awskeyspacebackuptos3.keyspace;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BatchStatement;
-import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
-import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletionStage;
@@ -51,7 +42,7 @@ public class DeleteInvoker {
 	private long startSystemNanos;
 	private int deletedLastCheckCount;
 	private double lastRate;
-	private CqlSession session;
+	private Thread logThread;
 
 	public DeleteInvoker(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
 			TablePrimaryKeyReader tablePrimaryKeyReader) {
@@ -88,10 +79,9 @@ public class DeleteInvoker {
 			deletingQuery4.start();
 			deletingQuery5.start();
 
-			new Thread(() -> {
+			logThread = new Thread(() -> {
 				while (true) {
-					System.out.printf("\rQueue: %s, page: %s, linesRead: %s, linesDeleted: %s, rate: %.2f"
-							, queue.size(), getPage(), getLinesRead(),
+					System.out.printf("\rQueue: %s, page: %s, linesRead: %s, linesDeleted: %s, rate: %.2f", queue.size(), getPage(), getLinesRead(),
 							linesDeleted.intValue(), calcRate());
 					try {
 						Thread.sleep(300L);
@@ -99,8 +89,8 @@ public class DeleteInvoker {
 						e.printStackTrace();
 					}
 				}
-			}).start();
-
+			});
+			logThread.start();
 			System.out.println("delete started");
 		}
 	}
@@ -123,76 +113,18 @@ public class DeleteInvoker {
 	}
 
 	private void startDeleteQuery() {
-
-		Runnable runnable = () -> {
-			CountDownLatch latch = new CountDownLatch(1);
-			session = sessionProvider.createSession();
-			PreparedStatement statment = prepareStatement(session);
-			while (true) {
-				BatchStatementBuilder builder = BatchStatement.builder(BatchType.UNLOGGED);
-				buildBatch(statment, builder);
-
-				if (builder.getStatementsCount() > 0) {
-//				CompletionStage<AsyncResultSet> f = sessionProvider.getSession2().executeAsync(builder.build());
-					//					pageLimiter.acquire();
-					session.execute(builder.build());
-//				f.whenComplete((rs, t) -> nexDelete(statment, latch));
-				} else {
-					System.out.println("no records");
-//				latch.countDown();
-					break;
-				}
-
-//			try {
-//				latch.await();
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
-			}
-			System.out.println("Finished " + Thread.currentThread().getName());
-		};
-		deletingQuery1 = new Thread(runnable, "deletingQuery1");
-		deletingQuery2 = new Thread(runnable, "deletingQuery2");
-		deletingQuery3 = new Thread(runnable, "deletingQuery3");
-		deletingQuery4 = new Thread(runnable, "deletingQuery4");
-		deletingQuery5 = new Thread(runnable, "deletingQuery5");
+		deletingQuery1 = new Thread(createRunnable(), "deletingQuery1");
+		deletingQuery2 = new Thread(createRunnable(), "deletingQuery2");
+		deletingQuery3 = new Thread(createRunnable(), "deletingQuery3");
+		deletingQuery4 = new Thread(createRunnable(), "deletingQuery4");
+		deletingQuery5 = new Thread(createRunnable(), "deletingQuery5");
 	}
 
-	private void nexDelete(PreparedStatement statment, CountDownLatch latch) {
 
-		BatchStatementBuilder builder = BatchStatement.builder(BatchType.UNLOGGED);
-		buildBatch(statment, builder);
-		if (builder.getStatementsCount() > 0) {
-			CompletionStage<AsyncResultSet> f = sessionProvider.getSession().executeAsync(builder.build());
-			f.whenComplete((rs, t) -> nexDelete(statment, latch));
-		} else {
-			System.out.println("no records");
-			latch.countDown();
-		}
+	private Runnable createRunnable() {
+		return new DeleteRunable(queryBuilder, sessionProvider.getSession2(), primaryKeys, queue, linesDeleted);
 	}
 
-	private void buildBatch(PreparedStatement delete, BatchStatementBuilder builder) {
-		for (int i = 0; i < 30; i++) {
-			Object[] arg = poll();
-			if (arg == null && i == 0) {
-				System.out.println("Finished delete");
-				break;
-			}
-			if (arg != null) {
-				builder.addStatement(delete.bind(arg));
-				linesDeleted.increment();
-			}
-		}
-	}
-
-	private PreparedStatement prepareStatement(CqlSession session) {
-		DeleteSelection d1 = QueryBuilder.deleteFrom(queryBuilder.getKeyspaceName(), queryBuilder.getTableName());
-		List<Relation> wheres = new ArrayList<>();
-		for (String primaryKey : this.primaryKeys) {
-			wheres.add(Relation.column(primaryKey).isEqualTo(QueryBuilder.bindMarker()));
-		}
-		return session.prepare(d1.where(wheres).build());
-	}
 
 	private void init() {
 		this.linesRead.reset();
@@ -279,14 +211,6 @@ public class DeleteInvoker {
 
 	}
 
-	public Object[] poll() {
-		try {
-			return queue.poll(5, TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
 
 	private void waitLatch() {
 		try {
@@ -309,11 +233,19 @@ public class DeleteInvoker {
 	}
 
 	public void close() {
+		stop(loadingQuery);
+		stop(deletingQuery1);
+		stop(deletingQuery2);
+		stop(deletingQuery3);
+		stop(deletingQuery4);
+		stop(deletingQuery5);
+		stop(logThread);
+	}
+
+	private void stop(Thread thread) {
 		try {
-			if (isThreadActive()) {
-				loadingQuery.interrupt();
-				loadingQuery.stop();
-			}
+			thread.interrupt();
+			thread.stop();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -329,9 +261,7 @@ public class DeleteInvoker {
 		long totalWriteOps = linesDeleted.intValue() - deletedLastCheckCount;
 		deletedLastCheckCount = linesDeleted.intValue();
 		double rate = (double) totalWriteOps / duration;
-		if (rate > 0) {
-			lastRate = rate;
-		}
+		lastRate = rate;
 		return rate;
 	}
 }
