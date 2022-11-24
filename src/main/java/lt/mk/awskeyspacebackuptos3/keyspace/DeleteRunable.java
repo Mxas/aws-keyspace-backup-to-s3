@@ -1,7 +1,6 @@
 package lt.mk.awskeyspacebackuptos3.keyspace;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
@@ -12,18 +11,19 @@ import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 class DeleteRunable implements Runnable {
 
+	public static final int WAITING_NEW_ITEM_TIMEOUT = 5;
+	public static final int EMPTY_RESPONSE_COUNT = 10;
 	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSession session;
 	private final List<String> primaryKeys;
 	private final ArrayBlockingQueue<Object[]> queue;
 	private final LongAdder linesDeleted;
+	private final LongAdder emptyCounter;
 
 	DeleteRunable(KeyspaceQueryBuilder queryBuilder, CqlSession session, List<String> primaryKeys, ArrayBlockingQueue<Object[]> queue, LongAdder linesDeleted) {
 		this.queryBuilder = queryBuilder;
@@ -31,6 +31,7 @@ class DeleteRunable implements Runnable {
 		this.primaryKeys = primaryKeys;
 		this.queue = queue;
 		this.linesDeleted = linesDeleted;
+		this.emptyCounter = new LongAdder();
 	}
 
 	@Override
@@ -50,11 +51,14 @@ class DeleteRunable implements Runnable {
 
 //				f.whenComplete((rs, t) -> nexDelete(statment, latch));
 				} else {
+					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println("no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + "no records " + Thread.currentThread().getName());
 					System.out.println();
 //				latch.countDown();
-					break;
+					if (this.emptyCounter.intValue() > EMPTY_RESPONSE_COUNT) {
+						break;
+					}
 				}
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
@@ -106,7 +110,7 @@ class DeleteRunable implements Runnable {
 
 	public Object[] poll() {
 		try {
-			return queue.poll(5, TimeUnit.MINUTES);
+			return queue.poll(WAITING_NEW_ITEM_TIMEOUT, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
