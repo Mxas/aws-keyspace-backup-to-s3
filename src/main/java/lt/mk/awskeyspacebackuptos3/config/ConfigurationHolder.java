@@ -35,6 +35,8 @@ public class ConfigurationHolder {
 
 		public int pagesToSkip = 0;
 		public int countOnEmptyPageReturnsFinish = 999999;
+		public int reinsertTtl = 15552000;
+		public int rateLimiterPerSec = 500;
 	}
 
 

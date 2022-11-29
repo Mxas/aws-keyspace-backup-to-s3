@@ -16,8 +16,12 @@ public enum ConfigsDocs {
 			c -> c.keyspace.awsKeyspaceDriverConfigPath),
 	kp("keyspace-pages-to-skip", "AWS Keyspace pages to skip.", (c, s) -> c.keyspace.pagesToSkip = Integer.parseInt(s),
 			c -> String.valueOf(c.keyspace.pagesToSkip)),
-	ke("keyspace-emppty-to-finish", "AWS Keyspace returned empty pages assume as finished (max int).", (c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
+	ke("keyspace-empty-to-finish", "AWS Keyspace returned empty pages assume as finished (max int).", (c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
 			c -> String.valueOf(c.keyspace.countOnEmptyPageReturnsFinish)),
+	kttl("keyspace-reinsert-ttl-value", "AWS Keyspace reinsert ttl value (15552000 = 1y).", (c, s) -> c.keyspace.reinsertTtl = Integer.parseInt(s),
+			c -> String.valueOf(c.keyspace.reinsertTtl)),
+	krate("keyspace-update-rate-limiter-per-sec", "AWS Keyspace modify rate limiter (500!).", (c, s) -> c.keyspace.rateLimiterPerSec = Integer.parseInt(s),
+			c -> String.valueOf(c.keyspace.rateLimiterPerSec)),
 	imq("in-memory-queue", "In memory blocking queue rows size.", (c, s) -> c.memory.queueSize = Integer.parseInt(s), c -> String.valueOf(c.memory.queueSize)),
 	ims("in-memory-stream-size-mb", "In memory buffered stream size in MB.", (c, s) -> c.memory.singleStreamSizeInMB = Integer.parseInt(s), c -> String.valueOf(
 			c.memory.singleStreamSizeInMB)),

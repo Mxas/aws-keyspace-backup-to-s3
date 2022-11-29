@@ -14,6 +14,7 @@ import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestCountHelper;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestQueryHelper;
+import lt.mk.awskeyspacebackuptos3.keyspace.reinsert.ReinsertDataInvoker;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3TestService;
@@ -43,6 +44,7 @@ public class SingletonManager {
 	private StatisticPrinter statisticPrinter;
 	private DeleteInvoker deleteInvoker;
 	private TablePrimaryKeyReader tablePrimaryKeyReader;
+	private ReinsertDataInvoker reinsertDataInvoker;
 
 	public SingletonManager(String[] args) {
 		this.configurationHolder = new ConfigurationHolder();
@@ -69,6 +71,7 @@ public class SingletonManager {
 			this.statisticProvider = new StatisticProvider(queue, streamProvider, storeToFile, dataFetcher, storeToS3Service, s3ClientWrapper);
 			this.statisticPrinter = new StatisticPrinter(statisticProvider);
 			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
+			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -94,6 +97,7 @@ public class SingletonManager {
 		Optional.ofNullable(statisticPrinter).ifPresent(StatisticPrinter::close);
 		Optional.ofNullable(testCountHelper).ifPresent(TestCountHelper::close);
 		Optional.ofNullable(deleteInvoker).ifPresent(DeleteInvoker::close);
+		Optional.ofNullable(reinsertDataInvoker).ifPresent(c -> c.close());
 	}
 
 	public KeyspaceQueryBuilder getQueryBuilder() {
@@ -151,5 +155,9 @@ public class SingletonManager {
 
 	public DeleteInvoker getDeleteInvoker() {
 		return deleteInvoker;
+	}
+
+	public ReinsertDataInvoker getReinsertDataInvoker() {
+		return reinsertDataInvoker;
 	}
 }
