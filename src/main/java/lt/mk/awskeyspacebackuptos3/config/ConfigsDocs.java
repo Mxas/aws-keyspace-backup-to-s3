@@ -2,7 +2,6 @@ package lt.mk.awskeyspacebackuptos3.config;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder;
 
 public enum ConfigsDocs {
 	m("menu", "Use interactive menu.", (c, s) -> c.menu.disableMenu = !Boolean.parseBoolean(s), c -> String.valueOf(c.menu.disableMenu)),
@@ -16,7 +15,8 @@ public enum ConfigsDocs {
 			c -> c.keyspace.awsKeyspaceDriverConfigPath),
 	kp("keyspace-pages-to-skip", "AWS Keyspace pages to skip.", (c, s) -> c.keyspace.pagesToSkip = Integer.parseInt(s),
 			c -> String.valueOf(c.keyspace.pagesToSkip)),
-	ke("keyspace-empty-to-finish", "AWS Keyspace returned empty pages assume as finished (max int).", (c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
+	ke("keyspace-empty-to-finish", "AWS Keyspace returned empty pages assume as finished (max int).",
+			(c, s) -> c.keyspace.countOnEmptyPageReturnsFinish = Integer.parseInt(s),
 			c -> String.valueOf(c.keyspace.countOnEmptyPageReturnsFinish)),
 	kttl("keyspace-reinsert-ttl-value", "AWS Keyspace reinsert ttl value (15552000 = 1y).", (c, s) -> c.keyspace.reinsertTtl = Integer.parseInt(s),
 			c -> String.valueOf(c.keyspace.reinsertTtl)),
@@ -28,6 +28,9 @@ public enum ConfigsDocs {
 	s3b("s3-bucket", "AWS S3 bucket.", (c, s) -> c.s3.bucket = s, c -> c.s3.bucket),
 	s3f("s3-folder", "AWS S3 folder (object prefix in bucket).", (c, s) -> c.s3.folder = s, c -> c.s3.folder),
 	s3r("s3-region", "AWS S3 bucket region.", (c, s) -> c.s3.region = s, c -> c.s3.region),
+	s3suf("s3-store-file-suffix", "AWS S3 file to store suffix (<timestamp>_<suffix>.csv).", (c, s) -> c.s3.storeFileNameSuffix = s, c -> c.s3.storeFileNameSuffix),
+	s3res("s3-restore-from-csv-key", "AWS S3 file key to to restore from bucket (full path in bucket).", (c, s) -> c.s3.restoreFromCsv = s,
+			c -> c.s3.restoreFromCsv),
 	fs("fs-result-path", "Path where to store files locally.", (c, s) -> c.fs.storeTo = s, c -> c.fs.storeTo);
 
 	final String optionLong;

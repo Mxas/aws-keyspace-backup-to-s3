@@ -11,6 +11,7 @@ public class RootView extends MenuView {
 		addMenuItem(new TestingMenuView(manager));
 		addMenuItem(new AwsKeyspaceFetchDataAction(manager.getDataFetcher()));
 		addMenuItem(new SaveToS3Action(manager.getStoreToS3Service()));
+		addMenuItem(new S3DataReadingAction(manager.getS3LinesReader()));
 		addMenuItem(new SaveToFileAction(manager.getStoreToFile()));
 		addMenuItem(new AwsKeyspaceDeleteAction(manager.getDeleteInvoker()));
 		addMenuItem(new AwsKeyspaceReinsertAction(manager.getReinsertDataInvoker()));

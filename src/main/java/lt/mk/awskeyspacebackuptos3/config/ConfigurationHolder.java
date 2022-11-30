@@ -52,5 +52,8 @@ public class ConfigurationHolder {
 		public String region;
 		public String bucket;
 		public String folder;
+
+		public String storeFileNameSuffix;
+		public String restoreFromCsv;
 	}
 }

@@ -7,14 +7,18 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.PartETag;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -64,7 +68,8 @@ public class S3ClientWrapper {
 	}
 
 	private String buildFileName() {
-		String fileName = DATE_PATTERN.format(LocalDateTime.now()) + "_.csv";
+		String fileName;
+		fileName = DATE_PATTERN.format(LocalDateTime.now()) + "_" + config.storeFileNameSuffix + ".csv";
 		return config.folder + "/" + keyspaceConfig.keyspace + "/" + keyspaceConfig.table + "/" + fileName;
 	}
 
@@ -128,5 +133,11 @@ public class S3ClientWrapper {
 
 	public String getUploadId() {
 		return uploadId;
+	}
+
+	public BufferedReader getNewFileReader() {
+
+		S3Object object = s3Client.getObject(new GetObjectRequest(config.bucket, config.restoreFromCsv));
+		return new BufferedReader(new InputStreamReader(object.getObjectContent()));
 	}
 }

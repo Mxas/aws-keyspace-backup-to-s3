@@ -6,14 +6,13 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
-import lt.mk.awskeyspacebackuptos3.keyspace.DeleteInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
 
 public class ReinsertDataInvoker {
 
-	private static final Logger LOG = Logger.getLogger(DeleteInvoker.class.getName());
+	private static final Logger LOG = Logger.getLogger(ReinsertDataInvoker.class.getName());
 	private final AwsKeyspaceConf conf;
 	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;

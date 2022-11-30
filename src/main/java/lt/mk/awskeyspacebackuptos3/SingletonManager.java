@@ -8,14 +8,15 @@ import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.DataFetcher;
-import lt.mk.awskeyspacebackuptos3.keyspace.DeleteInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestCountHelper;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestQueryHelper;
+import lt.mk.awskeyspacebackuptos3.keyspace.delete.DeleteInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.reinsert.ReinsertDataInvoker;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
+import lt.mk.awskeyspacebackuptos3.s3.S3LinesReader;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3TestService;
 import lt.mk.awskeyspacebackuptos3.s3.SyncS3MultipartUploader;
@@ -45,6 +46,7 @@ public class SingletonManager {
 	private DeleteInvoker deleteInvoker;
 	private TablePrimaryKeyReader tablePrimaryKeyReader;
 	private ReinsertDataInvoker reinsertDataInvoker;
+	private S3LinesReader s3LinesReader;
 
 	public SingletonManager(String[] args) {
 		this.configurationHolder = new ConfigurationHolder();
@@ -72,6 +74,7 @@ public class SingletonManager {
 			this.statisticPrinter = new StatisticPrinter(statisticProvider);
 			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
+			this.s3LinesReader = new S3LinesReader(s3ClientWrapper, queue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -98,6 +101,7 @@ public class SingletonManager {
 		Optional.ofNullable(testCountHelper).ifPresent(TestCountHelper::close);
 		Optional.ofNullable(deleteInvoker).ifPresent(DeleteInvoker::close);
 		Optional.ofNullable(reinsertDataInvoker).ifPresent(c -> c.close());
+		Optional.ofNullable(s3LinesReader).ifPresent(c -> c.close());
 	}
 
 	public KeyspaceQueryBuilder getQueryBuilder() {
@@ -159,5 +163,9 @@ public class SingletonManager {
 
 	public ReinsertDataInvoker getReinsertDataInvoker() {
 		return reinsertDataInvoker;
+	}
+
+	public S3LinesReader getS3LinesReader() {
+		return s3LinesReader;
 	}
 }

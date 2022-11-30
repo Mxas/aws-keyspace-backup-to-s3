@@ -1,6 +1,6 @@
 package lt.mk.awskeyspacebackuptos3.manu;
 
-import lt.mk.awskeyspacebackuptos3.keyspace.DeleteInvoker;
+import lt.mk.awskeyspacebackuptos3.keyspace.delete.DeleteInvoker;
 
 public class AwsKeyspaceDeleteAction extends ActionInThread {
 
