@@ -13,7 +13,7 @@ public abstract class ActionInThread extends ActionView {
 	public void executeCustomAction() {
 		try {
 			Thread t = ThreadUtil.newThreadStart(this::execute,"me");
-			t.join();:::
+			t.join();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
