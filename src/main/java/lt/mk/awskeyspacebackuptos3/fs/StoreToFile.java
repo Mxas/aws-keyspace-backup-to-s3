@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.Fs;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
 
@@ -46,7 +47,7 @@ public class StoreToFile {
 				consumedStreamCount++;
 				writer.write(is.readNBytes(is.available()));
 
-			} while (true);
+			} while (State.isRunning());
 
 			writer.flush();
 			System.out.println("Finished writing to " + config.storeTo);

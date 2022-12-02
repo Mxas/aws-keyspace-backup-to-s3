@@ -2,7 +2,6 @@ package lt.mk.awskeyspacebackuptos3.s3;
 
 import java.io.BufferedReader;
 import java.util.concurrent.atomic.LongAdder;
-import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.S3;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 
 public class S3LinesReader {
@@ -13,7 +12,7 @@ public class S3LinesReader {
 	private LongAdder count;
 
 
-	public S3LinesReader(S3ClientWrapper clientWrapper,DataQueue queue) {
+	public S3LinesReader(S3ClientWrapper clientWrapper, DataQueue queue) {
 		this.clientWrapper = clientWrapper;
 		this.queue = queue;
 	}
@@ -22,7 +21,6 @@ public class S3LinesReader {
 	public void startReading() {
 
 		clientWrapper.initClient();
-
 
 		count = new LongAdder();
 
@@ -33,7 +31,7 @@ public class S3LinesReader {
 				String firstLine = reader.readLine();
 
 				System.out.println("First line: " + firstLine);
-
+				queue.put(firstLine);
 				String s;
 				while ((s = reader.readLine()) != null) {
 					count.increment();

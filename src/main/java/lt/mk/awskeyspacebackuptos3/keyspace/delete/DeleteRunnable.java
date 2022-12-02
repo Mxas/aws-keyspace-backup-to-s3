@@ -14,11 +14,12 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 
 class DeleteRunnable implements Runnable {
 
-	public static final int WAITING_NEW_ITEM_TIMEOUT = 5;
+	public static final int WAITING_NEW_ITEM_TIMEOUT = 15;
 	public static final int EMPTY_RESPONSE_COUNT = 10;
 	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSession session;
@@ -43,7 +44,7 @@ class DeleteRunnable implements Runnable {
 	public void run() {
 
 		PreparedStatement statment = prepareStatement(session);
-		while (true) {
+		while (State.isRunning()) {
 			try {
 				BatchStatementBuilder builder = BatchStatement.builder(BatchType.UNLOGGED);
 				buildBatch(statment, builder);
@@ -54,7 +55,7 @@ class DeleteRunnable implements Runnable {
 				} else {
 					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println(this.emptyCounter.intValue() + "no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + " no records " + Thread.currentThread().getName());
 					System.out.println();
 
 					if (this.emptyCounter.intValue() > EMPTY_RESPONSE_COUNT) {
@@ -81,7 +82,7 @@ class DeleteRunnable implements Runnable {
 		for (int i = 0; i < 30; i++) {
 			Object[] arg = poll();
 			if (arg == null && i == 0) {
-				System.out.println("Finished delete");
+				System.out.println("Empty queue ... ");
 				break;
 			}
 			if (arg != null) {

@@ -2,6 +2,7 @@ package lt.mk.awskeyspacebackuptos3.s3;
 
 import java.io.IOException;
 import java.io.InputStream;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
 
 public class StoreToS3Service {
@@ -55,7 +56,7 @@ public class StoreToS3Service {
 				consumedBytes = consumedBytes + is.available();
 				uploader.upload(is);
 
-			} while (true);
+			} while (State.isRunning());
 			uploader.waitFullComplete();
 
 			System.out.println("Storing finished ...");

@@ -37,6 +37,8 @@ public class ConfigurationHolder {
 		public int countOnEmptyPageReturnsFinish = 999999;
 		public int reinsertTtl = 15552000;
 		public int rateLimiterPerSec = 500;
+
+		public int insertThreadCount = 10;
 	}
 
 

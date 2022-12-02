@@ -8,6 +8,7 @@ import java.io.File;
 import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.SSLContext;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
+import lt.mk.awskeyspacebackuptos3.keyspace.codecs.CodecsHolder;
 
 public class CqlSessionProvider {
 
@@ -28,6 +29,7 @@ public class CqlSessionProvider {
 		return CqlSession.builder()
 				.withConfigLoader(DriverConfigLoader.fromFile(getFile()))
 				.withSslContext(getaDefault())
+				.addTypeCodecs(CodecsHolder.getAdditionalCodecs())
 				.addTypeCodecs(TypeCodecs.ZONED_TIMESTAMP_UTC)
 				.build();
 	}

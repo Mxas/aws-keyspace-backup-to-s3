@@ -4,6 +4,7 @@ import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
@@ -66,7 +67,7 @@ public class ReinsertDataInvoker {
 	private void startProgressPrint() {
 
 		logThread = new Thread(() -> {
-			while (true) {
+			while (State.isRunning()) {
 
 				try {
 					System.out.printf("\rQueue: %s, page: %s, errorPage: %s LinesProcessed: %s, rate: %.2f", queue.size(), loadingRUnnable.getPageCounter(),

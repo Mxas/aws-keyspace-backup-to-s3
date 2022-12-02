@@ -14,6 +14,7 @@ import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestCountHelper;
 import lt.mk.awskeyspacebackuptos3.keyspace.TestQueryHelper;
 import lt.mk.awskeyspacebackuptos3.keyspace.delete.DeleteInvoker;
+import lt.mk.awskeyspacebackuptos3.keyspace.insert.InsertInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.reinsert.ReinsertDataInvoker;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
 import lt.mk.awskeyspacebackuptos3.s3.S3LinesReader;
@@ -47,6 +48,7 @@ public class SingletonManager {
 	private TablePrimaryKeyReader tablePrimaryKeyReader;
 	private ReinsertDataInvoker reinsertDataInvoker;
 	private S3LinesReader s3LinesReader;
+	private InsertInvoker insertInvoker;
 
 	public SingletonManager(String[] args) {
 		this.configurationHolder = new ConfigurationHolder();
@@ -75,6 +77,7 @@ public class SingletonManager {
 			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.s3LinesReader = new S3LinesReader(s3ClientWrapper, queue);
+			this.insertInvoker = new InsertInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, queue);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -102,6 +105,7 @@ public class SingletonManager {
 		Optional.ofNullable(deleteInvoker).ifPresent(DeleteInvoker::close);
 		Optional.ofNullable(reinsertDataInvoker).ifPresent(c -> c.close());
 		Optional.ofNullable(s3LinesReader).ifPresent(c -> c.close());
+		Optional.ofNullable(insertInvoker).ifPresent(c -> c.close());
 	}
 
 	public KeyspaceQueryBuilder getQueryBuilder() {
@@ -167,5 +171,9 @@ public class SingletonManager {
 
 	public S3LinesReader getS3LinesReader() {
 		return s3LinesReader;
+	}
+
+	public InsertInvoker getInsertInvoker() {
+		return insertInvoker;
 	}
 }

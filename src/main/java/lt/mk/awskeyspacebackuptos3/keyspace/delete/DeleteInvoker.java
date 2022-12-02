@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
@@ -91,7 +92,7 @@ public class DeleteInvoker {
 
 	private void initLogThread() {
 		logThread = new Thread(() -> {
-			while (true) {
+			while (State.isRunning()) {
 				System.out.printf("\rQueue: %s, page: %s, linesRead: %s, linesDeleted: %s, rate: %.2f", queue.size(), getPage(), getLinesRead(),
 						linesDeleted.intValue(), calcRate());
 				try {

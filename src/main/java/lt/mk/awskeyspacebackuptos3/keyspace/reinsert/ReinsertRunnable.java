@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
+import lt.mk.awskeyspacebackuptos3.State;
 
 class ReinsertRunnable implements Runnable {
 
@@ -56,7 +57,7 @@ class ReinsertRunnable implements Runnable {
 
 		PreparedStatement deleteStatement = prepareDeleteStatement(session);
 		PreparedStatement insertStatement = prepareInsertStatement(session);
-		while (true) {
+		while (State.isRunning()) {
 			try {
 				BatchStatementBuilder builder = BatchStatement.builder(BatchType.UNLOGGED);
 				buildBatch(deleteStatement, insertStatement, builder);

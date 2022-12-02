@@ -21,6 +21,8 @@ public class Main {
 				e.printStackTrace();
 			}
 		}
+
+		State.shutdown = true;
 	}
 
 	private static void init(String[] args) {
