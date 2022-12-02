@@ -6,6 +6,11 @@ import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
+import lt.mk.awskeyspacebackuptos3.State;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
+import lt.mk.awskeyspacebackuptos3.keyspace.*;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -15,13 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
-import lt.mk.awskeyspacebackuptos3.State;
-import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
-import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
-import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
-import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceUtil;
-import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
-import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
 
 public class DeleteInvoker {
 
@@ -91,7 +89,7 @@ public class DeleteInvoker {
 	}
 
 	private void initLogThread() {
-		logThread = new Thread(() -> {
+		logThread = ThreadUtil.newThreadStart(() -> {
 			while (State.isRunning()) {
 				System.out.printf("\rQueue: %s, page: %s, linesRead: %s, linesDeleted: %s, rate: %.2f", queue.size(), getPage(), getLinesRead(),
 						linesDeleted.intValue(), calcRate());
@@ -99,13 +97,12 @@ public class DeleteInvoker {
 					if (linesDeleted.intValue() % 10 == 0) {
 						System.out.print(" " + Arrays.toString(queue.peek()));
 					}
-					Thread.sleep(1000L);
+					ThreadUtil.sleep1s();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
-		});
-		logThread.start();
+		},"log-t");
 	}
 
 	private void startLoadingQuery() {
@@ -116,7 +113,7 @@ public class DeleteInvoker {
 		String query = queryBuilder.getQueryForDataLoading();
 		System.out.println("Build query: " + query);
 
-		loadingQuery = new Thread(() -> {
+		loadingQuery = ThreadUtil.newThread(() -> {
 			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(query);
 			futureRs.whenComplete((rs, t) -> putInQueuePage(rs, t, head));
 			waitLatch();
@@ -126,11 +123,11 @@ public class DeleteInvoker {
 	}
 
 	private void startDeleteQuery() {
-		deletingQuery1 = new Thread(createRunnable(), "deletingQuery1");
-		deletingQuery2 = new Thread(createRunnable(), "deletingQuery2");
-		deletingQuery3 = new Thread(createRunnable(), "deletingQuery3");
-		deletingQuery4 = new Thread(createRunnable(), "deletingQuery4");
-		deletingQuery5 = new Thread(createRunnable(), "deletingQuery5");
+		deletingQuery1 = ThreadUtil.newThread(createRunnable(), "deletingQuery1");
+		deletingQuery2 = ThreadUtil.newThread(createRunnable(), "deletingQuery2");
+		deletingQuery3 = ThreadUtil.newThread(createRunnable(), "deletingQuery3");
+		deletingQuery4 = ThreadUtil.newThread(createRunnable(), "deletingQuery4");
+		deletingQuery5 = ThreadUtil.newThread(createRunnable(), "deletingQuery5");
 	}
 
 
@@ -186,21 +183,15 @@ public class DeleteInvoker {
 
 	private void sleepWhileQueueDecrease() {
 		while (queue.remainingCapacity() < 20_000) {
-			try {
-				Thread.sleep(3000L);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			ThreadUtil.sleep3s();
 		}
 	}
 
 	private void put(Object[] args) {
-		try {
+		ThreadUtil.wrap(()-> {
 			queue.put(args);
 			increment();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		});
 	}
 
 	private Object[] args(Row raw) {
@@ -228,11 +219,7 @@ public class DeleteInvoker {
 
 
 	private void waitLatch() {
-		try {
-			latch.await(5, TimeUnit.DAYS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+			ThreadUtil.await(latch,5, TimeUnit.DAYS);
 	}
 
 	public boolean isThreadActive() {

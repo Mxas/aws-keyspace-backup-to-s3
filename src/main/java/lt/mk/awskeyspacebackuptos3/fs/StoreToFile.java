@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.Fs;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class StoreToFile {
 
@@ -25,8 +26,7 @@ public class StoreToFile {
 		if (isThreadActive()) {
 			System.out.println("Already started");
 		} else {
-			thread = new Thread(this::writeToFile);
-			thread.start();
+			thread = ThreadUtil.newThreadStart(this::writeToFile, "write-to-s3");
 		}
 	}
 

@@ -1,6 +1,7 @@
 package lt.mk.awskeyspacebackuptos3;
 
 import lt.mk.awskeyspacebackuptos3.manu.RootView;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class Main {
 
@@ -13,13 +14,7 @@ public class Main {
 		init(args);
 
 		if (!MANAGER.getConfigurationHolder().menu.disableMenu) {
-			try {
-				Thread menuThread = new Thread(() -> new RootView(MANAGER).display());
-				menuThread.start();
-				menuThread.join();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+				 new RootView(MANAGER).display();
 		}
 
 		State.shutdown = true;
@@ -32,6 +27,7 @@ public class Main {
 	}
 
 	private static void cleanUpAndClose() {
+		ThreadUtil.stopThreads();
 		if (MANAGER != null) {
 			MANAGER.close();
 		}

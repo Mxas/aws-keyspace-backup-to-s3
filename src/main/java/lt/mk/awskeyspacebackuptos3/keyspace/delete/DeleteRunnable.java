@@ -11,11 +11,13 @@ import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 class DeleteRunnable implements Runnable {
 
@@ -80,24 +82,19 @@ class DeleteRunnable implements Runnable {
 
 	private void buildBatch(PreparedStatement delete, BatchStatementBuilder builder) {
 		for (int i = 0; i < 30; i++) {
-			Object[] arg = poll();
-			if (arg == null && i == 0) {
+			Optional<Object[]> arg = poll();
+			if (arg.isEmpty() && i == 0) {
 				System.out.println("Empty queue ... ");
 				break;
 			}
-			if (arg != null) {
-				builder.addStatement(delete.bind(arg));
+			if (arg.isPresent()) {
+				builder.addStatement(delete.bind(arg.get()));
 				linesDeleted.increment();
 			}
 		}
 	}
 
-	public Object[] poll() {
-		try {
-			return queue.poll(WAITING_NEW_ITEM_TIMEOUT, TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		return null;
+	public Optional<Object[]> poll() {
+	return 		ThreadUtil.wrap(()-> queue.poll(WAITING_NEW_ITEM_TIMEOUT, TimeUnit.MINUTES));
 	}
 }

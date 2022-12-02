@@ -3,6 +3,7 @@ package lt.mk.awskeyspacebackuptos3.keyspace.insert;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import lt.mk.awskeyspacebackuptos3.State;
@@ -12,6 +13,7 @@ import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 import org.apache.commons.lang3.StringUtils;
 
 public class InsertInvoker {
@@ -56,17 +58,12 @@ public class InsertInvoker {
 	}
 
 	private void initLogThread() {
-		Thread logThread = new Thread(() -> {
+		 ThreadUtil.newThreadStart(() -> {
 			while (State.isRunning()) {
 				System.out.printf("\rQueue: %s, linseInserted: %s, rate: %.2f", queue.size(), linesProcessed.intValue(), calcRate());
-				try {
-					Thread.sleep(1000L);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+					ThreadUtil.sleep1s();
 			}
-		});
-		logThread.start();
+		},"log-");
 	}
 
 	private void init() {
@@ -76,7 +73,7 @@ public class InsertInvoker {
 
 	private void startDeleteQuery() {
 		for (int i = 0; i < conf.insertThreadCount; i++) {
-			Thread t = new Thread(createRunnable(), "insert-thread-" + i);
+			Thread t = ThreadUtil.newThread(createRunnable(), "insert-thread-" + i);
 			insertThread.add(t);
 			t.start();
 		}
@@ -89,10 +86,11 @@ public class InsertInvoker {
 
 	private List<String> getHeaders() {
 		if (StringUtils.isBlank(firstLine)) {
-			this.firstLine = queue.poll();
-		}
-		if (StringUtils.isBlank(firstLine)) {
-			throw new IllegalArgumentException("Headers are missing...");
+			Optional<String> line = queue.poll();
+			if (line.isEmpty()) {
+				throw new IllegalArgumentException("Headers are missing...");
+			}
+			this.firstLine = line.get();
 		}
 
 		List<String> headerList = CsvLine.csvLineParse(this.firstLine);

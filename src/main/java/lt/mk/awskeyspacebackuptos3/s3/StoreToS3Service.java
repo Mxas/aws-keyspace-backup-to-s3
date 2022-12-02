@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class StoreToS3Service {
 
@@ -32,7 +33,7 @@ public class StoreToS3Service {
 		if (isThreadActive()) {
 			System.out.println("'StoreToS3' Already running");
 		} else {
-			thread = new Thread(() -> StartWriteToS3(), "StoreToS3");
+			thread = ThreadUtil.newThread(() -> StartWriteToS3(), "StoreToS3");
 			thread.start();
 		}
 	}

@@ -5,6 +5,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.util.Optional;
+
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.InMemory;
 
 public class InputStreamProvider {
@@ -36,22 +38,22 @@ public class InputStreamProvider {
 
 			ByteArrayOutputStream bufferOutputStream = new ByteArrayOutputStream();
 			PrintWriter writer = new PrintWriter(bufferOutputStream);
-			String line;
+			Optional<String> line;
 
 			this.streamCount++;
 
 			do {
 				line = queue.poll();
-				if (line != null) {
-					writer.println(line);
+				if (line.isPresent()) {
+					writer.println(line.get());
 					this.linceCount++;
 				}
 				this.currentStreamSize = bufferOutputStream.size();
 				if (this.currentStreamSize > SIZE) {
 					break;
 				}
-			} while (line != null);
-			if (line == null) {
+			} while (line.isPresent());
+			if (line.isEmpty()) {
 				System.out.println("Queue is empty exiting polling");
 			}
 			this.bytesCount = this.bytesCount + bufferOutputStream.size();

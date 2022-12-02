@@ -1,6 +1,8 @@
 package lt.mk.awskeyspacebackuptos3.keyspace;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
+
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -46,22 +48,17 @@ public class TestCountHelper {
 	}
 
 	private void startQuerying() {
-		this.thread = new Thread(() -> {
+		this.thread = ThreadUtil.newThreadStart(() -> {
 			List<String> head = tableHeaderReader.readAndSetHeaders();
 			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(queryBuilder.getCountingQuery(head.get(0)));
 			futureRs.whenComplete(this::processResultSetCounting);
 			waitLatch();
 			System.out.println("Counting finished");
-		});
-		this.thread.start();
+		}, "query-t");
 	}
 
 	private void waitLatch() {
-		try {
-			latch.await(5, TimeUnit.DAYS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		ThreadUtil.await(latch,5, TimeUnit.DAYS);
 	}
 
 	void processResultSetCounting(AsyncResultSet rs, Throwable error) {

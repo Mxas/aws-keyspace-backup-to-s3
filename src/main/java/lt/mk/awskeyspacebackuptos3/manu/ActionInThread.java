@@ -1,6 +1,7 @@
 package lt.mk.awskeyspacebackuptos3.manu;
 
 import io.bretty.console.view.ActionView;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public abstract class ActionInThread extends ActionView {
 
@@ -11,9 +12,8 @@ public abstract class ActionInThread extends ActionView {
 	@Override
 	public void executeCustomAction() {
 		try {
-			Thread t = new Thread(this::execute);
-			t.start();
-			t.join();
+			Thread t = ThreadUtil.newThreadStart(this::execute,"me");
+			t.join();:::
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

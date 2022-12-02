@@ -10,6 +10,7 @@ import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class ReinsertDataInvoker {
 
@@ -66,18 +67,15 @@ public class ReinsertDataInvoker {
 
 	private void startProgressPrint() {
 
-		logThread = new Thread(() -> {
+		logThread = ThreadUtil.newThread(() -> {
 			while (State.isRunning()) {
 
-				try {
-					System.out.printf("\rQueue: %s, page: %s, errorPage: %s LinesProcessed: %s, rate: %.2f", queue.size(), loadingRUnnable.getPageCounter(),
-							loadingRUnnable.getErrorPagesCounter(), linesReinserted.intValue(), calcRate());
-					Thread.sleep(300L);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+
+				System.out.printf("\rQueue: %s, page: %s, errorPage: %s LinesProcessed: %s, rate: %.2f", queue.size(), loadingRUnnable.getPageCounter(),
+						loadingRUnnable.getErrorPagesCounter(), linesReinserted.intValue(), calcRate());
+				ThreadUtil.sleep1s();
 			}
-		});
+		}, "log-d");
 		startThread(logThread);
 	}
 
@@ -85,7 +83,7 @@ public class ReinsertDataInvoker {
 	private void startLoadingQuery() {
 
 		loadingRUnnable = new LoadDataRunnable(conf, header, sessionProvider.getSession(), query, queue);
-		loadingQuery = new Thread(loadingRUnnable, "KeyspaceLoadData");
+		loadingQuery = ThreadUtil.newThread(loadingRUnnable, "KeyspaceLoadData");
 
 		startThread(loadingQuery);
 
@@ -103,7 +101,7 @@ public class ReinsertDataInvoker {
 	}
 
 	private Thread createReinsertingThread() {
-		return new Thread(new ReinsertRunnable(sessionProvider.getSession2(), primaryKeys, header, queue, linesReinserted, queryBuilder.getKeyspaceName(),
+		return ThreadUtil.newThread(new ReinsertRunnable(sessionProvider.getSession2(), primaryKeys, header, queue, linesReinserted, queryBuilder.getKeyspaceName(),
 				queryBuilder.getTableName(), conf.reinsertTtl, rateLimiter), "reinserting");
 	}
 

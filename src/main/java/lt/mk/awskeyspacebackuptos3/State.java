@@ -8,4 +8,7 @@ public class State {
 		return !shutdown;
 	}
 
+	public static boolean isShutdown() {
+		return shutdown;
+	}
 }

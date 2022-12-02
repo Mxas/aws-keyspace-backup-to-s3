@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceUtil;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class LoadDataRunnable implements Runnable {
 
@@ -75,11 +76,7 @@ public class LoadDataRunnable implements Runnable {
 	}
 
 	private void waitLatch() {
-		try {
-			latch.await(5, TimeUnit.DAYS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+			ThreadUtil.await(latch,5, TimeUnit.DAYS);
 	}
 
 	private Object[] args(Row raw) {

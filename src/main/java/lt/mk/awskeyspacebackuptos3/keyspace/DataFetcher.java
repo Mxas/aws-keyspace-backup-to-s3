@@ -12,8 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -60,7 +63,7 @@ public class DataFetcher {
 
 			put(StringUtils.join(head.toArray(), DELIMITER));
 
-			thread = new Thread(() -> {
+			thread = ThreadUtil.newThread(() -> {
 //				PreparedStatement statement = sessionProvider.getSession().prepare(query);
 //				SimpleStatement statement = SimpleStatement.newInstance(query).setPageSize(80_000);
 //				BatchStatement statement = BatchStatement.newInstance(BatchType.UNLOGGED).setPageSize(80_000);
@@ -84,7 +87,9 @@ public class DataFetcher {
 	}
 
 	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
-
+        if (State.isShutdown()) {
+            return;
+        }
 		try {
 			KeyspaceUtil.checkError(error, page.get(), rs);
 			page.incrementAndGet();
@@ -99,7 +104,7 @@ public class DataFetcher {
 					put(line);
 				}
 			}
-			if (emptyPagesCounter.intValue() < conf.countOnEmptyPageReturnsFinish && rs.hasMorePages()) {
+			if (emptyPagesCounter.intValue() < conf.countOnEmptyPageReturnsFinish && rs.hasMorePages() && State.isRunning()) {
 				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
 			} else {
 				latch.countDown();
@@ -147,11 +152,7 @@ public class DataFetcher {
 
 
 	private void waitLatch() {
-		try {
-			latch.await(5, TimeUnit.DAYS);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		ThreadUtil.wrap(() -> latch.await(5, TimeUnit.DAYS));
 	}
 
 	public boolean isThreadActive() {

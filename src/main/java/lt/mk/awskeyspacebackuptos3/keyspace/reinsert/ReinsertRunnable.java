@@ -11,10 +11,8 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+
+import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import lt.mk.awskeyspacebackuptos3.State;
 
@@ -115,14 +113,14 @@ class ReinsertRunnable implements Runnable {
 
 	private void buildBatch(PreparedStatement delete, PreparedStatement insert, BatchStatementBuilder builder) {
 		for (int i = 0; i < 14; i++) {
-			Object[] arg = queue.poll();
-			if (arg == null && i == 0) {
+			Optional<Object[]> arg = queue.poll();
+			if (arg.isEmpty() && i == 0) {
 				System.out.println("Finished delete");
 				break;
 			}
-			if (arg != null) {
-				builder.addStatement(delete.bind(deleteArgs(arg)));
-				builder.addStatement(insert.bind(insertArgs(arg)));
+			if (arg.isPresent()) {
+				builder.addStatement(delete.bind(deleteArgs(arg.get())));
+				builder.addStatement(insert.bind(insertArgs(arg.get())));
 				linesProcessed.increment();
 			}
 		}

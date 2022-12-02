@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
@@ -71,13 +72,13 @@ class InsertRunnable implements Runnable {
 	private List<String> readLines() {
 		List<String> lines = new ArrayList<>();
 		for (int i = 0; i < batchSize; i++) {
-			String line = queue.poll();
-			if (line == null && i == 0) {
+			Optional<String> line = queue.poll();
+			if (line.isEmpty() && i == 0) {
 				System.out.println("Queue is empty stopping...");
 				break;
 			}
-			if (line != null) {
-				lines.add(line);
+			if (line.isPresent()) {
+				lines.add(line.get());
 				linesProcessed.increment();
 			}
 		}
