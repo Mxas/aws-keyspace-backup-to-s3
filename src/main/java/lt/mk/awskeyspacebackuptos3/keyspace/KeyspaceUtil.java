@@ -48,12 +48,25 @@ public class KeyspaceUtil {
 	private static void storeException(Throwable error, String message) {
 		try {
 			FileOutputStream fos = null;
-			fos = new FileOutputStream(new File("logs/exception_" + DATE_PATTERN.format(LocalDateTime.now()) + ".txt"), true);
+			createLogDir();
+			File file = new File("logs" + File.separatorChar + "exception_" + DATE_PATTERN.format(LocalDateTime.now()) + ".txt");
+			if(file.exists()){
+				file.createNewFile();
+			}
+
+			fos = new FileOutputStream(file, true);
 			PrintStream ps = new PrintStream(fos);
 			ps.println(message);
 			error.printStackTrace(ps);
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	private static void createLogDir() {
+		var f = new File("logs");
+		if (!f.isDirectory()){
+			f.mkdir();
 		}
 	}
 }
