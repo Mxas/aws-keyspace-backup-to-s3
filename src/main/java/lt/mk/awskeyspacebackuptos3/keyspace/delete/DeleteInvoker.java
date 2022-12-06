@@ -6,12 +6,6 @@ import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
-import lt.mk.awskeyspacebackuptos3.State;
-import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
-import lt.mk.awskeyspacebackuptos3.keyspace.*;
-import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
-
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletionStage;
@@ -20,8 +14,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
+import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
+import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
+import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceUtil;
+import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
+import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
+import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
+import lt.mk.awskeyspacebackuptos3.statistic.Statistical;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
-public class DeleteInvoker {
+public class DeleteInvoker implements Statistical {
 
 	private static final Logger LOG = Logger.getLogger(DeleteInvoker.class.getName());
 	private final AwsKeyspaceConf conf;
@@ -44,10 +47,6 @@ public class DeleteInvoker {
 	private Thread deletingQuery3;
 	private Thread deletingQuery4;
 	private Thread deletingQuery5;
-	private long startSystemNanos;
-	private int deletedLastCheckCount;
-	private double lastRate;
-	private Thread logThread;
 
 	public DeleteInvoker(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
 			TablePrimaryKeyReader tablePrimaryKeyReader) {
@@ -83,26 +82,12 @@ public class DeleteInvoker {
 			deletingQuery4.start();
 			deletingQuery5.start();
 
-			initLogThread();
 			System.out.println("delete started");
 		}
 	}
 
-	private void initLogThread() {
-		logThread = ThreadUtil.newThreadStart(() -> {
-			while (State.isRunning()) {
-				System.out.printf("\rQueue: %s, page: %s, linesRead: %s, linesDeleted: %s, rate: %.2f", queue.size(), getPage(), getLinesRead(),
-						linesDeleted.intValue(), calcRate());
-				try {
-					if (linesDeleted.intValue() % 10 == 0) {
-						System.out.print(" " + Arrays.toString(queue.peek()));
-					}
-					ThreadUtil.sleep1s();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		},"log-t");
+	long getLinesDeleted() {
+		return linesDeleted.longValue();
 	}
 
 	private void startLoadingQuery() {
@@ -188,7 +173,7 @@ public class DeleteInvoker {
 	}
 
 	private void put(Object[] args) {
-		ThreadUtil.wrap(()-> {
+		ThreadUtil.wrap(() -> {
 			queue.put(args);
 			increment();
 		});
@@ -219,15 +204,18 @@ public class DeleteInvoker {
 
 
 	private void waitLatch() {
-			ThreadUtil.await(latch,5, TimeUnit.DAYS);
+		ThreadUtil.await(latch, 5, TimeUnit.DAYS);
 	}
 
 	public boolean isThreadActive() {
-		return loadingQuery != null && loadingQuery.isAlive();
+		return ThreadUtil.isActive(loadingQuery);
 	}
 
 	public int getPage() {
 		return page.get();
+	}
+	public int getQueueSize() {
+		return queue.size();
 	}
 
 	public long getLinesRead() {
@@ -241,7 +229,6 @@ public class DeleteInvoker {
 		stop(deletingQuery3);
 		stop(deletingQuery4);
 		stop(deletingQuery5);
-		stop(logThread);
 	}
 
 	private void stop(Thread thread) {
@@ -255,17 +242,8 @@ public class DeleteInvoker {
 		}
 	}
 
-
-	public double calcRate() {
-		double duration = (double) (System.nanoTime() - startSystemNanos) / 1_000_000_000L;
-		if (duration < 5) {
-			return lastRate;
-		}
-		startSystemNanos = System.nanoTime();
-		long totalWriteOps = linesDeleted.intValue() - deletedLastCheckCount;
-		deletedLastCheckCount = linesDeleted.intValue();
-		double rate = (double) totalWriteOps / duration;
-		lastRate = rate;
-		return rate;
+	@Override
+	public StatProvider provider() {
+		return new DeleteStatistic(this);
 	}
 }

@@ -7,13 +7,13 @@ import java.util.TimerTask;
 
 public class StatisticPrinter {
 
-	public final StatisticProvider statisticProvider;
+	public final StatisticsRender statisticsRender;
 	private Timer timer;
 	private String lastPrintedLine;
 	private boolean headerPrinted;
 
-	public StatisticPrinter(StatisticProvider statisticProvider) {
-		this.statisticProvider = statisticProvider;
+	public StatisticPrinter(StatisticsRender statisticsRender) {
+		this.statisticsRender = statisticsRender;
 	}
 
 
@@ -36,9 +36,8 @@ public class StatisticPrinter {
 
 	private void printLine() {
 
-		String line = statisticProvider.dataLine();
+		String line = statisticsRender.data();
 		printInSameLIne(line);
-//		System.out.println(statisticProvider.dataLine());
 	}
 
 	private void printEmpty() {
@@ -47,38 +46,18 @@ public class StatisticPrinter {
 	}
 
 	private void printHeader() {
-		System.out.println();
-		String headerLine1 = statisticProvider.headerLine1();
-		space(headerLine1.length());
-		System.out.println(headerLine1);
-		space(headerLine1.length());
-		System.out.println(statisticProvider.headerLine2());
-		space(headerLine1.length());
-//		System.out.println();
+		System.out.print(statisticsRender.header());
+
 	}
 
-	private void space(int length) {
-		for (int i = 0; i < length; i++) {
-			System.out.print("-");
-		}
-		System.out.println();
-	}
 
 	private void printInSameLIne(String line) {
 		if (!Objects.equals(this.lastPrintedLine, line)) {
-//			printIfNeededHeader();
 			this.lastPrintedLine = line;
 			System.out.print("\r" + line);
 		}
 	}
 
-	private void printIfNeededHeader() {
-		if (!this.headerPrinted) {
-			headerPrinted = true;
-			printEmpty();
-			printHeader();
-		}
-	}
 
 	public void close() {
 		try {

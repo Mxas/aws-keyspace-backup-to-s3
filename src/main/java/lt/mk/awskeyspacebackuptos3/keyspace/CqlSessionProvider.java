@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.SSLContext;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.codecs.CodecsHolder;
+import org.apache.commons.lang3.StringUtils;
 
 public class CqlSessionProvider {
 
@@ -43,6 +44,9 @@ public class CqlSessionProvider {
 	}
 
 	private File getFile() {
+		if (StringUtils.isBlank(this.conf.awsKeyspaceDriverConfigPath)) {
+			throw new IllegalArgumentException("Keyspace config file not provided");
+		}
 		File file = new File(this.conf.awsKeyspaceDriverConfigPath);
 		if (!file.isFile() || !file.exists()) {
 			throw new IllegalArgumentException("Keyspace config file not found: " + this.conf.awsKeyspaceDriverConfigPath);

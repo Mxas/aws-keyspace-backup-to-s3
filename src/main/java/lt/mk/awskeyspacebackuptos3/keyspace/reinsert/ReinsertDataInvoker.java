@@ -4,15 +4,16 @@ import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
-import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
+import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
+import lt.mk.awskeyspacebackuptos3.statistic.Statistical;
 import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
-public class ReinsertDataInvoker {
+public class ReinsertDataInvoker implements Statistical {
 
 	private static final Logger LOG = Logger.getLogger(ReinsertDataInvoker.class.getName());
 	private final AwsKeyspaceConf conf;
@@ -29,10 +30,6 @@ public class ReinsertDataInvoker {
 	private List<String> primaryKeys;
 	private String query;
 	private LoadDataRunnable loadingRUnnable;
-	private Thread logThread;
-	private long startSystemNanos;
-	private double lastRate;
-	private long deletedLastCheckCount;
 	private final LongAdder linesReinserted = new LongAdder();
 	private RateLimiter rateLimiter;
 
@@ -59,24 +56,24 @@ public class ReinsertDataInvoker {
 			startLoadingQuery();
 			startReinserting();
 
-			startProgressPrint();
-
 			System.out.println("delete started");
 		}
 	}
 
-	private void startProgressPrint() {
+	long getReinsertedCount() {
+		return linesReinserted.longValue();
+	}
 
-		logThread = ThreadUtil.newThread(() -> {
-			while (State.isRunning()) {
+	int getErrorPagesCounter() {
+		return loadingRUnnable==null?0:loadingRUnnable.getErrorPagesCounter();
+	}
 
+	int getPageCounter() {
+		return loadingRUnnable==null?0:loadingRUnnable.getPageCounter();
+	}
 
-				System.out.printf("\rQueue: %s, page: %s, errorPage: %s LinesProcessed: %s, rate: %.2f", queue.size(), loadingRUnnable.getPageCounter(),
-						loadingRUnnable.getErrorPagesCounter(), linesReinserted.intValue(), calcRate());
-				ThreadUtil.sleep1s();
-			}
-		}, "log-d");
-		startThread(logThread);
+	int getQueueSize() {
+		return queue.size();
 	}
 
 
@@ -126,32 +123,12 @@ public class ReinsertDataInvoker {
 
 
 	public void close() {
-		stop(loadingQuery);
-		stop(reinserting);
-		stop(logThread);
+		ThreadUtil.stop(loadingQuery);
+		ThreadUtil.stop(reinserting);
 	}
 
-	private void stop(Thread thread) {
-		try {
-			if (thread != null) {
-				thread.interrupt();
-				thread.stop();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public double calcRate() {
-		double duration = (double) (System.nanoTime() - startSystemNanos) / 1_000_000_000L;
-		if (duration < 5) {
-			return lastRate;
-		}
-		startSystemNanos = System.nanoTime();
-		long totalWriteOps = linesReinserted.intValue() - deletedLastCheckCount;
-		deletedLastCheckCount = linesReinserted.intValue();
-		double rate = (double) totalWriteOps / duration;
-		lastRate = rate;
-		return rate;
+	@Override
+	public StatProvider provider() {
+		return new ReinsertStatistic(this);
 	}
 }

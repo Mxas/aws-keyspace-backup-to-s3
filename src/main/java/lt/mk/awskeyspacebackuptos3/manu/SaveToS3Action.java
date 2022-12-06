@@ -1,6 +1,6 @@
 package lt.mk.awskeyspacebackuptos3.manu;
 
-import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
+import lt.mk.awskeyspacebackuptos3.s3.storing.StoreToS3Service;
 
 public class SaveToS3Action extends ActionInThread {
 

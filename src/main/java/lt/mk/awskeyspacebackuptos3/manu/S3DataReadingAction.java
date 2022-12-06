@@ -1,6 +1,6 @@
 package lt.mk.awskeyspacebackuptos3.manu;
 
-import lt.mk.awskeyspacebackuptos3.s3.S3LinesReader;
+import lt.mk.awskeyspacebackuptos3.s3.loading.S3LinesReader;
 
 public class S3DataReadingAction extends ActionInThread {
 

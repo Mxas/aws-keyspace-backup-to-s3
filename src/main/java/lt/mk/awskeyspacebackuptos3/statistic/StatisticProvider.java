@@ -1,14 +1,13 @@
 package lt.mk.awskeyspacebackuptos3.statistic;
 
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
 import lt.mk.awskeyspacebackuptos3.fs.StoreToFile;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
-import lt.mk.awskeyspacebackuptos3.keyspace.DataFetcher;
+import lt.mk.awskeyspacebackuptos3.keyspace.backup.DataFetcher;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
-import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
+import lt.mk.awskeyspacebackuptos3.s3.storing.StoreToS3Service;
 
+@Deprecated // remove
 public class StatisticProvider {
 
 	private final DataQueue queue;
@@ -75,7 +74,7 @@ public class StatisticProvider {
 
 	private String memoryQueue() {
 		return String.format("\u001b[33m|%6d|%6d|%11d|%11s\u001b[39m",
-				queue.size(), streamProvider.getStreamCount(), streamProvider.getLinceCount(), byteSize(streamProvider.getBytesCount())
+				queue.size(), streamProvider.getStreamCount(), streamProvider.getLinceCount(), StringFormatter.byteSize(streamProvider.getBytesCount())
 		);
 	}
 
@@ -87,8 +86,8 @@ public class StatisticProvider {
 
 	private String s3() {
 		return String.format("\u001b[31m|%6s|%8d|%9s|%10s|%7d\u001b[39m",
-				storeToS3Service.isThreadActive(), storeToS3Service.getConsumedStreamsCount(), byteSize(storeToS3Service.getLastConsumedStreamSize()),
-				byteSize(storeToS3Service.getConsumedBytes()), s3ClientWrapper.getPartNumber()
+				storeToS3Service.isThreadActive(), storeToS3Service.getConsumedStreamsCount(), StringFormatter.byteSize(storeToS3Service.getLastConsumedStreamSize()),
+				StringFormatter.byteSize(storeToS3Service.getConsumedBytes()), s3ClientWrapper.getPartNumber()
 		);
 	}
 
@@ -111,18 +110,6 @@ public class StatisticProvider {
 		);
 	}
 
-
-	public static String byteSize(long bytes) {
-		if (-1000 < bytes && bytes < 1000) {
-			return bytes + " B";
-		}
-		CharacterIterator ci = new StringCharacterIterator("kMGTPE");
-		while (bytes <= -999_950 || bytes >= 999_950) {
-			bytes /= 1000;
-			ci.next();
-		}
-		return String.format("%.1f %cB", bytes / 1000.0, ci.current());
-	}
 
 	public double calcRate() {
 		double duration = (double) (System.nanoTime() - startSystemNanos) / 1_000_000_000L;

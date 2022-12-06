@@ -1,6 +1,6 @@
 package lt.mk.awskeyspacebackuptos3.manu;
 
-import lt.mk.awskeyspacebackuptos3.keyspace.DataFetcher;
+import lt.mk.awskeyspacebackuptos3.keyspace.backup.DataFetcher;
 
 public class AwsKeyspaceFetchDataAction extends ActionInThread {
 

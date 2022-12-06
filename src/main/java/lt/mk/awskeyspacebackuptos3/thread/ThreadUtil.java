@@ -19,6 +19,21 @@ public class ThreadUtil {
         wrap(() -> Thread.sleep(3_000L));
     }
 
+	public static boolean isActive(Thread thread) {
+		return thread != null && thread.isAlive();
+	}
+
+    public static void stop(Thread thread) {
+        try {
+            if (thread != null) {
+                thread.interrupt();
+                thread.stop();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public interface Vo {
         void vo() throws InterruptedException;
     }

@@ -7,7 +7,7 @@ import lt.mk.awskeyspacebackuptos3.fs.StoreToFile;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 import lt.mk.awskeyspacebackuptos3.inmemory.InputStreamProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
-import lt.mk.awskeyspacebackuptos3.keyspace.DataFetcher;
+import lt.mk.awskeyspacebackuptos3.keyspace.backup.DataFetcher;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
 import lt.mk.awskeyspacebackuptos3.keyspace.TablePrimaryKeyReader;
@@ -17,12 +17,13 @@ import lt.mk.awskeyspacebackuptos3.keyspace.delete.DeleteInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.insert.InsertInvoker;
 import lt.mk.awskeyspacebackuptos3.keyspace.reinsert.ReinsertDataInvoker;
 import lt.mk.awskeyspacebackuptos3.s3.S3ClientWrapper;
-import lt.mk.awskeyspacebackuptos3.s3.S3LinesReader;
-import lt.mk.awskeyspacebackuptos3.s3.StoreToS3Service;
+import lt.mk.awskeyspacebackuptos3.s3.loading.S3LinesReader;
+import lt.mk.awskeyspacebackuptos3.s3.storing.StoreToS3Service;
 import lt.mk.awskeyspacebackuptos3.s3.StoreToS3TestService;
 import lt.mk.awskeyspacebackuptos3.s3.SyncS3MultipartUploader;
 import lt.mk.awskeyspacebackuptos3.statistic.StatisticPrinter;
 import lt.mk.awskeyspacebackuptos3.statistic.StatisticProvider;
+import lt.mk.awskeyspacebackuptos3.statistic.StatisticsRender;
 
 public class SingletonManager {
 
@@ -49,6 +50,7 @@ public class SingletonManager {
 	private ReinsertDataInvoker reinsertDataInvoker;
 	private S3LinesReader s3LinesReader;
 	private InsertInvoker insertInvoker;
+	private StatisticsRender statisticsRender;
 
 	public SingletonManager(String[] args) {
 		this.configurationHolder = new ConfigurationHolder();
@@ -58,6 +60,7 @@ public class SingletonManager {
 
 	public void init() {
 		try {
+			this.statisticsRender = new StatisticsRender();
 			this.cqlSessionProvider = new CqlSessionProvider(configurationHolder.keyspace);
 			this.queryBuilder = new KeyspaceQueryBuilder(configurationHolder.keyspace);
 			this.tableHeaderReader = new TableHeaderReader(cqlSessionProvider, queryBuilder);
@@ -73,16 +76,28 @@ public class SingletonManager {
 			this.storeToS3TestService = new StoreToS3TestService(s3ClientWrapper, this.syncS3MultipartUploader);
 			this.storeToS3Service = new StoreToS3Service(this.s3ClientWrapper, this.streamProvider, this.syncS3MultipartUploader);
 			this.statisticProvider = new StatisticProvider(queue, streamProvider, storeToFile, dataFetcher, storeToS3Service, s3ClientWrapper);
-			this.statisticPrinter = new StatisticPrinter(statisticProvider);
+			this.statisticPrinter = new StatisticPrinter(statisticsRender);
 			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.s3LinesReader = new S3LinesReader(s3ClientWrapper, queue);
 			this.insertInvoker = new InsertInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, queue);
+
+			linkStatistical();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 //		this.statisticPrinter.iniStatPrinting();
+	}
+
+	private void linkStatistical() {
+		statisticsRender.add(this.dataFetcher);
+		statisticsRender.add(this.deleteInvoker);
+		statisticsRender.add(this.insertInvoker);
+		statisticsRender.add(this.reinsertDataInvoker);
+		statisticsRender.add(this.s3LinesReader);
+		statisticsRender.add(this.storeToS3Service);
 	}
 
 	public ConfigurationHolder getConfigurationHolder() {

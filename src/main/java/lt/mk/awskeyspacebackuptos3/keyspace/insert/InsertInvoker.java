@@ -6,17 +6,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.csv.CsvLine;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
+import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
+import lt.mk.awskeyspacebackuptos3.statistic.Statistical;
 import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 import org.apache.commons.lang3.StringUtils;
 
-public class InsertInvoker {
+public class InsertInvoker implements Statistical {
 
 	private final AwsKeyspaceConf conf;
 	private final KeyspaceQueryBuilder queryBuilder;
@@ -24,11 +25,8 @@ public class InsertInvoker {
 	private final TableHeaderReader tableHeaderReader;
 	private final DataQueue queue;
 
-	private LongAdder linesProcessed;
+	private final LongAdder linesProcessed = new LongAdder();
 	private final List<Thread> insertThread = new ArrayList<>();
-	private double lastRate;
-	private long startSystemNanos;
-	private long deletedLastCheckCount;
 	private RateLimiter rateLimiter;
 	private String firstLine;
 
@@ -52,22 +50,21 @@ public class InsertInvoker {
 
 			startDeleteQuery();
 
-			initLogThread();
 			System.out.println("insert started");
 		}
 	}
 
-	private void initLogThread() {
-		 ThreadUtil.newThreadStart(() -> {
-			while (State.isRunning()) {
-				System.out.printf("\rQueue: %s, linseInserted: %s, rate: %.2f", queue.size(), linesProcessed.intValue(), calcRate());
-					ThreadUtil.sleep1s();
-			}
-		},"log-");
+
+	long getLinesInserted() {
+		return linesProcessed.longValue();
+	}
+
+	int getQueueSize() {
+		return queue.size();
 	}
 
 	private void init() {
-		this.linesProcessed = new LongAdder();
+		this.linesProcessed.reset();
 		this.rateLimiter = RateLimiter.create(conf.rateLimiterPerSec, 10, TimeUnit.SECONDS);
 	}
 
@@ -98,21 +95,6 @@ public class InsertInvoker {
 		return headerList;
 	}
 
-
-	public double calcRate() {
-		double duration = (double) (System.nanoTime() - startSystemNanos) / 1_000_000_000L;
-		if (duration < 5) {
-			return lastRate;
-		}
-		startSystemNanos = System.nanoTime();
-		long totalWriteOps = linesProcessed.intValue() - deletedLastCheckCount;
-		deletedLastCheckCount = linesProcessed.intValue();
-		double rate = (double) totalWriteOps / duration;
-		lastRate = rate;
-		return rate;
-	}
-
-
 	public boolean isThreadActive() {
 		return !insertThread.isEmpty() && insertThread.get(0).isAlive();
 	}
@@ -121,5 +103,10 @@ public class InsertInvoker {
 
 		insertThread.forEach(c -> c.stop());
 		insertThread.clear();
+	}
+
+	@Override
+	public StatProvider provider() {
+		return new InsertStatistic(this);
 	}
 }
