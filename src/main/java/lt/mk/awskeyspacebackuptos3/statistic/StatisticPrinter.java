@@ -4,10 +4,13 @@ package lt.mk.awskeyspacebackuptos3.statistic;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.LongAdder;
 
 public class StatisticPrinter {
 
 	public final StatisticsRender statisticsRender;
+	private final LongAdder count = new LongAdder();
+	private final LongAdder noChangesCount = new LongAdder();
 	private Timer timer;
 	private String lastPrintedLine;
 	private boolean headerPrinted;
@@ -19,6 +22,8 @@ public class StatisticPrinter {
 
 	public void iniStatPrinting() {
 		try {
+			count.reset();
+			noChangesCount.reset();
 			printEmpty();
 			printHeader();
 			printLine();
@@ -35,9 +40,23 @@ public class StatisticPrinter {
 	}
 
 	private void printLine() {
+		checkForReprintHeader();
+		printInSameLIne(statisticsRender.data());
+		checkForFinishing();
+	}
 
-		String line = statisticsRender.data();
-		printInSameLIne(line);
+	private void checkForReprintHeader() {
+		count.increment();
+		if (count.intValue() % 120 == 0) {
+			printEmpty();
+			printHeader();
+		}
+	}
+
+	private void checkForFinishing() {
+		if (noChangesCount.intValue() > 1000) {
+			close();
+		}
 	}
 
 	private void printEmpty() {
@@ -52,9 +71,13 @@ public class StatisticPrinter {
 
 
 	private void printInSameLIne(String line) {
+
 		if (!Objects.equals(this.lastPrintedLine, line)) {
 			this.lastPrintedLine = line;
 			System.out.print("\r" + line);
+			noChangesCount.reset();
+		} else {
+			noChangesCount.increment();
 		}
 	}
 

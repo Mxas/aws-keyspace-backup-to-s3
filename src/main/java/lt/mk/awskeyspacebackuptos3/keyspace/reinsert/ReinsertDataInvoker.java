@@ -29,7 +29,7 @@ public class ReinsertDataInvoker implements Statistical {
 	private List<String> header;
 	private List<String> primaryKeys;
 	private String query;
-	private LoadDataRunnable loadingRUnnable;
+	private LoadDataRunnable loadingRunnable;
 	private final LongAdder linesReinserted = new LongAdder();
 	private RateLimiter rateLimiter;
 
@@ -65,11 +65,11 @@ public class ReinsertDataInvoker implements Statistical {
 	}
 
 	int getErrorPagesCounter() {
-		return loadingRUnnable==null?0:loadingRUnnable.getErrorPagesCounter();
+		return loadingRunnable == null ? 0 : loadingRunnable.getErrorPagesCounter();
 	}
 
 	int getPageCounter() {
-		return loadingRUnnable==null?0:loadingRUnnable.getPageCounter();
+		return loadingRunnable == null ? 0 : loadingRunnable.getPageCounter();
 	}
 
 	int getQueueSize() {
@@ -79,8 +79,8 @@ public class ReinsertDataInvoker implements Statistical {
 
 	private void startLoadingQuery() {
 
-		loadingRUnnable = new LoadDataRunnable(conf, header, sessionProvider.getSession(), query, queue);
-		loadingQuery = ThreadUtil.newThread(loadingRUnnable, "KeyspaceLoadData");
+		loadingRunnable = new LoadDataRunnable(conf, header, sessionProvider.getSession(), query, queue);
+		loadingQuery = ThreadUtil.newThread(loadingRunnable, "KeyspaceLoadData");
 
 		startThread(loadingQuery);
 

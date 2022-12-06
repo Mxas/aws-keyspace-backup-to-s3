@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public enum ConfigsDocs {
-	m("menu", "Use interactive menu.", (c, s) -> c.menu.disableMenu = !Boolean.parseBoolean(s), c -> String.valueOf(c.menu.disableMenu)),
+	command("command", "Skip menu and execute [backup, restore, reinsert, delete] command. Otherwise use interactive menu.", (c, s) -> c.menu.command = s, c -> c.menu.command),
 	kk("keyspace-keyspace", "AWS Keyspace storage 'keyspace'. If query will be provided this value will be ignored.", (c, s) -> c.keyspace.keyspace = s,
 			c -> c.keyspace.keyspace),
 	kt("keyspace-table", "AWS Keyspace storage 'table'. If query will be provided this value will be ignored.", (c, s) -> c.keyspace.table = s,

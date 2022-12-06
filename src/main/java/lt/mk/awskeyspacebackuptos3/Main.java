@@ -1,5 +1,6 @@
 package lt.mk.awskeyspacebackuptos3;
 
+import lt.mk.awskeyspacebackuptos3.cli.CLIInvoker;
 import lt.mk.awskeyspacebackuptos3.manu.RootView;
 import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
@@ -13,11 +14,12 @@ public class Main {
 
 		init(args);
 
-		if (!MANAGER.getConfigurationHolder().menu.disableMenu) {
-				 new RootView(MANAGER).display();
+		if (!MANAGER.getConfigurationHolder().menu.isMenuDisabled()) {
+			new RootView(MANAGER).display();
+			State.shutdown = true;
+		} else {
+			new CLIInvoker(MANAGER, MANAGER.getConfigurationHolder().menu).run();
 		}
-
-		State.shutdown = true;
 	}
 
 	private static void init(String[] args) {

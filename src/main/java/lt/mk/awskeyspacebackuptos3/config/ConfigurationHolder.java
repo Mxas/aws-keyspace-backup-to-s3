@@ -1,5 +1,7 @@
 package lt.mk.awskeyspacebackuptos3.config;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class ConfigurationHolder {
 
 
@@ -13,7 +15,11 @@ public class ConfigurationHolder {
 
 	public class Menu {
 
-		public boolean disableMenu;
+		public String command;
+
+		public boolean isMenuDisabled() {
+			return StringUtils.isNotBlank(command);
+		}
 	}
 
 	public class Csv {

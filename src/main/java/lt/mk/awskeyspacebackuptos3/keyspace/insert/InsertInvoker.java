@@ -48,7 +48,7 @@ public class InsertInvoker implements Statistical {
 
 			init();
 
-			startDeleteQuery();
+			startInsertThreads();
 
 			System.out.println("insert started");
 		}
@@ -68,7 +68,7 @@ public class InsertInvoker implements Statistical {
 		this.rateLimiter = RateLimiter.create(conf.rateLimiterPerSec, 10, TimeUnit.SECONDS);
 	}
 
-	private void startDeleteQuery() {
+	private void startInsertThreads() {
 		for (int i = 0; i < conf.insertThreadCount; i++) {
 			Thread t = ThreadUtil.newThread(createRunnable(), "insert-thread-" + i);
 			insertThread.add(t);
@@ -101,7 +101,7 @@ public class InsertInvoker implements Statistical {
 
 	public void close() {
 
-		insertThread.forEach(c -> c.stop());
+		insertThread.forEach(ThreadUtil::stop);
 		insertThread.clear();
 	}
 

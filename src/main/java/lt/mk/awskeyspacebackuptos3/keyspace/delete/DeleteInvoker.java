@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
+import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
@@ -133,7 +134,10 @@ public class DeleteInvoker implements Statistical {
 	}
 
 	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
-
+		if (State.isShutdown()) {
+			System.out.println("System shutdown");
+			return;
+		}
 		try {
 			KeyspaceUtil.checkError(error, page.get(), rs);
 			page.incrementAndGet();
@@ -214,6 +218,7 @@ public class DeleteInvoker implements Statistical {
 	public int getPage() {
 		return page.get();
 	}
+
 	public int getQueueSize() {
 		return queue.size();
 	}
