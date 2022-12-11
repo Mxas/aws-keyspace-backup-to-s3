@@ -50,7 +50,7 @@ public class TestCountHelper {
 	private void startQuerying() {
 		this.thread = ThreadUtil.newThreadStart(() -> {
 			List<String> head = tableHeaderReader.readAndSetHeaders();
-			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(queryBuilder.getCountingQuery(head.get(0)));
+			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getReadingSession().executeAsync(queryBuilder.getCountingQuery(head.get(0)));
 			futureRs.whenComplete(this::processResultSetCounting);
 			waitLatch();
 			System.out.println("Counting finished");

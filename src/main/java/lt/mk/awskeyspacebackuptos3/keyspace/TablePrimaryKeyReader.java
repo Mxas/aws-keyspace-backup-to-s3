@@ -17,7 +17,7 @@ public class TablePrimaryKeyReader {
 	}
 
 	public List<String> getPrimaryKeys() {
-		Optional<KeyspaceMetadata> ks = sessionProvider.getSession().getMetadata().getKeyspace(queryBuilder.getKeyspaceName());
+		Optional<KeyspaceMetadata> ks = sessionProvider.getReadingSession().getMetadata().getKeyspace(queryBuilder.getKeyspaceName());
 		if (ks.isPresent()) {
 			Optional<TableMetadata> table = ks.get().getTable(queryBuilder.getTableName());
 			if (table.isPresent()) {

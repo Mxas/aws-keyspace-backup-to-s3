@@ -20,7 +20,7 @@ public class TableHeaderReader {
 		String query = queryBuilder.getQuery();
 		System.out.println("Using query: " + query);
 
-		ResultSet rs = sessionProvider.getSession().execute(query);
+		ResultSet rs = sessionProvider.getReadingSession().execute(query);
 		List<String> columns = new ArrayList<>();
 		rs.getColumnDefinitions().forEach(d -> columns.add(d.getName().toString()));
 

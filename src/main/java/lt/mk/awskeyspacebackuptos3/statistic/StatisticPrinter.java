@@ -1,29 +1,34 @@
 
 package lt.mk.awskeyspacebackuptos3.statistic;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.LongAdder;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.Stat;
 
 public class StatisticPrinter {
 
 	public final StatisticsRender statisticsRender;
-	private final LongAdder count = new LongAdder();
-	private final LongAdder noChangesCount = new LongAdder();
+	private final Stat config;
 	private Timer timer;
 	private String lastPrintedLine;
-	private boolean headerPrinted;
+	private LocalDateTime lastPrintedHeader = LocalDateTime.now();
+	private LocalDateTime lastNewLinePrinted = LocalDateTime.now();
+	private LocalDateTime lastStatPrinted = LocalDateTime.now();
 
-	public StatisticPrinter(StatisticsRender statisticsRender) {
+	public StatisticPrinter(StatisticsRender statisticsRender, Stat config) {
 		this.statisticsRender = statisticsRender;
+		this.config = config;
 	}
 
 
 	public void iniStatPrinting() {
 		try {
-			count.reset();
-			noChangesCount.reset();
+			this.lastStatPrinted = LocalDateTime.now();
+			this.lastNewLinePrinted = LocalDateTime.now();
+			this.lastPrintedHeader = LocalDateTime.now();
 			printEmpty();
 			printHeader();
 			printLine();
@@ -33,28 +38,32 @@ public class StatisticPrinter {
 				public void run() {
 					printLine();
 				}
-			}, 1000L, 500L);
+			}, 1000L, config.printStatisticInMillis);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	private void printLine() {
-		checkForReprintHeader();
 		printInSameLIne(statisticsRender.data());
 		checkForFinishing();
 	}
 
 	private void checkForReprintHeader() {
-		count.increment();
-		if (count.intValue() % 120 == 0) {
+		if (Duration.between(lastPrintedHeader, LocalDateTime.now()).getSeconds() > config.printHeaderAfterSeconds) {
 			printEmpty();
 			printHeader();
+		} else {
+			if (Duration.between(lastNewLinePrinted, LocalDateTime.now()).getSeconds() > config.printStatNewLineAfterSeconds) {
+				lastNewLinePrinted = LocalDateTime.now();
+				System.out.println();
+			}
 		}
 	}
 
 	private void checkForFinishing() {
-		if (noChangesCount.intValue() > 1000) {
+		if (Duration.between(lastNewLinePrinted, LocalDateTime.now()).getSeconds()  > config.stopStatsPrintingAfterNotChangedSeconds) {
+			System.out.println("Stoppling statistics timer...");
 			close();
 		}
 	}
@@ -65,19 +74,19 @@ public class StatisticPrinter {
 	}
 
 	private void printHeader() {
-		System.out.print(statisticsRender.header());
-
+		System.out.println(statisticsRender.header());
+		lastPrintedHeader = LocalDateTime.now();
+		lastNewLinePrinted = LocalDateTime.now();
 	}
 
 
 	private void printInSameLIne(String line) {
 
 		if (!Objects.equals(this.lastPrintedLine, line)) {
+			checkForReprintHeader();
 			this.lastPrintedLine = line;
 			System.out.print("\r" + line);
-			noChangesCount.reset();
-		} else {
-			noChangesCount.increment();
+			lastStatPrinted = LocalDateTime.now();
 		}
 	}
 

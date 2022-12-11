@@ -9,7 +9,7 @@ import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
 
 public class ReinsertStatistic implements StatProvider {
 
-	private static final String[] COLUMNS = {"Active", "Queue size", "Page", "Er.pages", "Reinserted", "Rate"};
+	private static final String[] COLUMNS = {"Active", "Queue size", "Page", "Er.pages", "Reinserted", "Reinsert Threads", "Rate"};
 
 	private final RateCalc rateCalc;
 	private final ReinsertDataInvoker invoker;
@@ -22,7 +22,7 @@ public class ReinsertStatistic implements StatProvider {
 
 	@Override
 	public String h1() {
-		return "Aws Keyspace data insertion";
+		return "Aws Keyspace data Reinsertion";
 	}
 
 	@Override
@@ -38,13 +38,14 @@ public class ReinsertStatistic implements StatProvider {
 				ofNum(invoker.getPageCounter(), 9),
 				ofNum(invoker.getErrorPagesCounter(), 9),
 				ofNum(invoker.getReinsertedCount(), 12),
+				ofNum(invoker.getReinsertThreadsCount(), 2),
 				ofRate(rateCalc.calcRate()),
 		};
 	}
 
 	@Override
 	public boolean on() {
-		if (invoker.isThreadActive()) {
+		if (invoker.isThreadActive() || invoker.getReinsertThreadsCount() > 0) {
 			wasOne = true;
 		}
 		return this.wasOne;

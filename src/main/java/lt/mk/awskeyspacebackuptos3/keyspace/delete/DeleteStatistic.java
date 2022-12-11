@@ -9,7 +9,7 @@ import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
 
 public class DeleteStatistic implements StatProvider {
 
-	private static final String[] COLUMNS = {"Active", "Queue size", "Page No", "Lines read", "Lines Deleted", "Rate"};
+	private static final String[] COLUMNS = {"Active", "Queue size", "Page No", "Lines read", "Delete threads", "Lines Deleted", "Rate"};
 
 	private final RateCalc rateCalc;
 	private final DeleteInvoker deleteInvoker;
@@ -37,6 +37,7 @@ public class DeleteStatistic implements StatProvider {
 				ofNum(deleteInvoker.getQueueSize(), 9),
 				ofNum(deleteInvoker.getPage(), 9),
 				ofNum(deleteInvoker.getLinesRead(), 12),
+				ofNum(deleteInvoker.getDeleteThreadsCount(), 2),
 				ofNum(deleteInvoker.getLinesDeleted(), 12),
 				ofRate(rateCalc.calcRate()),
 		};

@@ -1,8 +1,10 @@
 package lt.mk.awskeyspacebackuptos3.keyspace.reinsert;
 
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import java.util.logging.Logger;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
@@ -23,7 +25,7 @@ public class ReinsertDataInvoker implements Statistical {
 	private final TablePrimaryKeyReader tablePrimaryKeyReader;
 
 	private Thread loadingQuery;
-	private Thread reinserting;
+	private final List<Thread> reinsertingThreads = new ArrayList<>();
 
 	private final ReQueue queue;
 	private List<String> header;
@@ -45,7 +47,7 @@ public class ReinsertDataInvoker implements Statistical {
 	}
 
 
-	public void startR() {
+	public void startReinserting() {
 
 		if (isThreadActive()) {
 			System.out.println("Already running");
@@ -54,7 +56,7 @@ public class ReinsertDataInvoker implements Statistical {
 			init();
 
 			startLoadingQuery();
-			startReinserting();
+			startReinsertingThreads();
 
 			System.out.println("delete started");
 		}
@@ -78,28 +80,30 @@ public class ReinsertDataInvoker implements Statistical {
 
 
 	private void startLoadingQuery() {
-
-		loadingRunnable = new LoadDataRunnable(conf, header, sessionProvider.getSession(), query, queue);
-		loadingQuery = ThreadUtil.newThread(loadingRunnable, "KeyspaceLoadData");
-
-		startThread(loadingQuery);
-
+		loadingRunnable = new LoadDataRunnable(conf, header, sessionProvider.getReadingSession(), query, queue);
+		loadingQuery = ThreadUtil.newThreadStart(loadingRunnable, "KeyspaceLoadData");
 	}
 
-	private void startReinserting() {
+	private void startReinsertingThreads() {
 
-		for (int i = 0; i < 6; i++) {
-			startThread(createReinsertingThread());
+		for (int i = 0; i < conf.writeThreadsCount; i++) {
+			reinsertingThreads.add(createReinsertingThread(i));
 		}
+
+		ThreadUtil.newThreadStart(() -> {
+			while (getReinsertThreadsCount() > 0) {
+				ThreadUtil.sleep3s();
+			}
+			sessionProvider.closeWriteSession();
+		}, "reinsert-session-closeable");
 	}
 
-	private void startThread(Thread thread) {
-		thread.start();
-	}
-
-	private Thread createReinsertingThread() {
-		return ThreadUtil.newThread(new ReinsertRunnable(sessionProvider.getSession2(), primaryKeys, header, queue, linesReinserted, queryBuilder.getKeyspaceName(),
-				queryBuilder.getTableName(), conf.reinsertTtl, rateLimiter), "reinserting");
+	private Thread createReinsertingThread(int i) {
+		BooleanSupplier dataPopulationIsNotFinished = () -> loadingQuery != null && loadingQuery.isAlive();
+		return ThreadUtil.newThreadStart(
+				new ReinsertRunnable(sessionProvider.getWriteSession(), primaryKeys, header, queue, linesReinserted, queryBuilder.getKeyspaceName(),
+						queryBuilder.getTableName(), conf.reinsertTtl, rateLimiter, conf.wantInQueueNewItemTimeoutMinutes, dataPopulationIsNotFinished),
+				"reinserting-thread-" + i);
 	}
 
 	private void init() {
@@ -124,11 +128,15 @@ public class ReinsertDataInvoker implements Statistical {
 
 	public void close() {
 		ThreadUtil.stop(loadingQuery);
-		ThreadUtil.stop(reinserting);
+		reinsertingThreads.forEach(ThreadUtil::stop);
 	}
 
 	@Override
 	public StatProvider provider() {
 		return new ReinsertStatistic(this);
+	}
+
+	public long getReinsertThreadsCount() {
+		return reinsertingThreads.stream().filter(Thread::isAlive).count();
 	}
 }

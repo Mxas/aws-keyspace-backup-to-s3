@@ -7,10 +7,10 @@ public class ConfigurationHolder {
 
 	public AwsKeyspaceConf keyspace = new AwsKeyspaceConf();
 	public Menu menu = new Menu();
-	public Csv csv = new Csv();
 	public Fs fs = new Fs();
 	public S3 s3 = new S3();
 	public InMemory memory = new InMemory();
+	public Stat stat = new Stat();
 
 
 	public class Menu {
@@ -22,9 +22,12 @@ public class ConfigurationHolder {
 		}
 	}
 
-	public class Csv {
+	public class Stat {
 
-		public String storeTo;
+		public long printStatisticInMillis = 2000;
+		public long printHeaderAfterSeconds = 600;
+		public long printStatNewLineAfterSeconds = 300;
+		public int stopStatsPrintingAfterNotChangedSeconds = 1000;
 	}
 
 	public class Fs {
@@ -44,7 +47,11 @@ public class ConfigurationHolder {
 		public int reinsertTtl = 15552000;
 		public int rateLimiterPerSec = 500;
 
-		public int insertThreadCount = 10;
+		public int writeThreadsCount = 8;
+
+		public int stopPageFetchingAfterErrorPage = 50;
+		public int deleteBatchSize = 30;
+		public long wantInQueueNewItemTimeoutMinutes = 10;
 	}
 
 
@@ -56,7 +63,6 @@ public class ConfigurationHolder {
 
 	public class S3 {
 
-		public int partSizeInMB = 10;
 		public String region;
 		public String bucket;
 		public String folder;

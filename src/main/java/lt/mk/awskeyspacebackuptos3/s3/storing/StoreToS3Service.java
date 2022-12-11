@@ -28,17 +28,21 @@ public class StoreToS3Service implements Statistical {
 	}
 
 	public void startStoring() {
-		client.initClient();
-		client.initMultipartUploader();
-		consumedStreamsCount = 0;
-		lastConsumedStreamSize = -1;
-		consumedBytes = 0;
+		try {
+			client.initClient();
+			client.initMultipartUploader();
+			consumedStreamsCount = 0;
+			lastConsumedStreamSize = -1;
+			consumedBytes = 0;
 
-		if (isThreadActive()) {
-			System.out.println("'StoreToS3' Already running");
-		} else {
-			thread = ThreadUtil.newThread(() -> StartWriteToS3(), "StoreToS3");
-			thread.start();
+			if (isThreadActive()) {
+				System.out.println("'StoreToS3' Already running");
+			} else {
+				thread = ThreadUtil.newThread(() -> StartWriteToS3(), "StoreToS3");
+				thread.start();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 

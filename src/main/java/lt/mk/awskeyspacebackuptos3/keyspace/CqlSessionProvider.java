@@ -14,16 +14,11 @@ import org.apache.commons.lang3.StringUtils;
 public class CqlSessionProvider {
 
 	private final AwsKeyspaceConf conf;
-	private CqlSession session;
+	private CqlSession session1;
 	private CqlSession session2;
 
 	public CqlSessionProvider(AwsKeyspaceConf conf) throws NoSuchAlgorithmException {
 		this.conf = conf;
-	}
-
-	private void initSession() {
-		this.session = createSession();
-		this.session2 = createSession();
 	}
 
 	public CqlSession createSession() {
@@ -56,9 +51,9 @@ public class CqlSessionProvider {
 
 	public void close() {
 		try {
-			if (session != null) {
-				session.close();
-				session = null;
+			if (session1 != null) {
+				session1.close();
+				session1 = null;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -74,19 +69,42 @@ public class CqlSessionProvider {
 	}
 
 
-	public CqlSession getSession() {
-		if (session == null) {
-			initSession();
+	public CqlSession getReadingSession() {
+		if (session1 == null) {
+			this.session1 = createSession();
 		}
-		return session;
+		return session1;
 	}
 
+	public void closeReadingSession() {
+		if (session1 != null) {
+			close(session1);
+			this.session1 = null;
+		}
 
-	public CqlSession getSession2() {
+	}
+
+	public CqlSession getWriteSession() {
 		if (session2 == null) {
-			initSession();
+			this.session2 = createSession();
 		}
 		return session2;
+	}
+
+	public void closeWriteSession() {
+		if (session2 != null) {
+			close(session2);
+			this.session2 = null;
+		}
+
+	}
+
+	public static void close(CqlSession s) {
+		try {
+			s.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }
 

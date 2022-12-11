@@ -16,7 +16,7 @@ public class TestQueryHelper {
 		//select json * from " + conf.table + "  where timestamp > '2020-09-15 20:05:59.745Z' ALLOW FILTERING
 		String query = queryBuilder.getQueryJson();
 		System.out.println("Query: " + query);
-		ResultSet rs = sessionProvider.getSession().execute(query);
+		ResultSet rs = sessionProvider.getReadingSession().execute(query);
 		String json = rs.one().getString(0);
 		return json;
 	}

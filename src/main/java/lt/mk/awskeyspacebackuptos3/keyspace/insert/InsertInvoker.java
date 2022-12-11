@@ -69,7 +69,7 @@ public class InsertInvoker implements Statistical {
 	}
 
 	private void startInsertThreads() {
-		for (int i = 0; i < conf.insertThreadCount; i++) {
+		for (int i = 0; i < conf.writeThreadsCount; i++) {
 			Thread t = ThreadUtil.newThread(createRunnable(), "insert-thread-" + i);
 			insertThread.add(t);
 			t.start();
@@ -77,7 +77,7 @@ public class InsertInvoker implements Statistical {
 	}
 
 	private Runnable createRunnable() {
-		return new InsertRunnable(sessionProvider.getSession2(), getHeaders(), queue, linesProcessed, queryBuilder.getKeyspaceName(), queryBuilder.getTableName(),
+		return new InsertRunnable(sessionProvider.getWriteSession(), getHeaders(), queue, linesProcessed, queryBuilder.getKeyspaceName(), queryBuilder.getTableName(),
 				conf.reinsertTtl, rateLimiter);
 	}
 

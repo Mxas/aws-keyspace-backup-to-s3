@@ -25,13 +25,13 @@ public class CLIInvoker {
 				manager.getInsertInvoker().startR();
 				break;
 			case "reinsert":
-				manager.getReinsertDataInvoker().startR();
+				manager.getReinsertDataInvoker().startReinserting();
 				break;
 			case "delete":
 				manager.getDeleteInvoker().startR();
 				break;
 			default:
-				throw new IllegalArgumentException("Wrong command");
+				throw new IllegalArgumentException("Wrong command! Available: restore, backup, reinsert and delete.");
 		}
 
 		manager.getStatisticPrinter().iniStatPrinting();

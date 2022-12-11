@@ -1,15 +1,15 @@
 package lt.mk.awskeyspacebackuptos3.keyspace.reinsert;
 
-import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
+import static lt.mk.awskeyspacebackuptos3.thread.ThreadUtil.wrap;
 
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 
 public class ReQueue {
 
-	private static final long WAITING_NEW_ITEM_TIMEOUT = 15;
 	private final ArrayBlockingQueue<Object[]> queue;
 	private final AtomicInteger totalCounter;
 
@@ -21,10 +21,10 @@ public class ReQueue {
 
 
 	public void put(Object[] args) {
-		ThreadUtil.wrap(()-> {
+		wrap(() -> {
 			queue.put(args);
 			increment();
-		} );
+		});
 	}
 
 	private void increment() {
@@ -39,8 +39,8 @@ public class ReQueue {
 	}
 
 
-	public Optional<Object[]> poll() {
-			return ThreadUtil.wrap(()-> queue.poll(WAITING_NEW_ITEM_TIMEOUT, TimeUnit.MINUTES));
+	public Optional<Object[]> poll(long waitingNewItemTimeoutInMinutes) {
+		return wrap(() -> queue.poll(waitingNewItemTimeoutInMinutes, TimeUnit.MINUTES));
 	}
 
 	public int size() {

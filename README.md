@@ -1,13 +1,14 @@
 # aws-keyspace-backup-to-s3
-Command line Tool for Keyspace CSV backups
 
+Command line Tool for Keyspace CSV backups
 
 1. Reading whole table (or provided query) and posting in -in-memory queue.
 2. Storing lines in VCS file and
-   1. Uploading in S3 bucket (with multi-part upload)
-   2. Storing locally in provided file
+    1. Uploading in S3 bucket (with multi-part upload)
+    2. Storing locally in provided file
 
 AWS keystore config file example:
+
 ```
 datastax-java-driver {
 basic {
@@ -54,20 +55,33 @@ Tool is not fully finished, still development in progress.
 
 Tool arguments (optional)
 
-      -fs,--fs-result-path               Path where to store files locally.
-      -imq,--in-memory-queue             In memory blocking queue rows size.
-      -ims,--in-memory-stream-size-mb    In memory buffered stream size in MB.
-      -kf,--keyspace-config-file         AWS Keyspace configuration file path.
-      -kk,--keyspace-keyspace            AWS Keyspace storage 'keyspace'. If query will be provided this value will be ignored.
-      -kq,--keyspace-query               AWS Keyspace data fetching query. Will ignoring keyspace.table if this value provided.
-      -kt,--keyspace-table               AWS Keyspace storage 'table'. If query will be provided this value will be ignored.
-      -m,--menu                          Use interactive menu.
-      -s3b,--s3-bucket                   AWS S3 bucket.
-      -s3f,--s3-folder                   AWS S3 folder (object prefix in bucket).
-      -s3r,--s3-region                   AWS S3 bucket region.
+      -command,--command                                   Skip menu and execute [backup, restore, reinsert, delete] command. Otherwise use interactive menu.
+      -fs,--fs-result-path                                 Path where to store files locally.
+      -imq,--in-memory-queue                               In memory blocking queue rows size.
+      -ims,--in-memory-stream-size-mb                      In memory buffered stream size in MB. If AWS s3 storage will be used, then this size will be one multi part size value in MB.
+      -kdelb,--keyspace-delete-batch-size                  AWS Keyspace delete batch size (aws max30).
+      -ke,--keyspace-empty-to-finish                       AWS Keyspace returned empty pages assume as finished (max int).
+      -kerrp,--keyspace-stop-after-error-pages-count       AWS Keyspace stop execution after errored/failed pages fetching.
+      -kf,--keyspace-config-file                           AWS Keyspace configuration file path.
+      -kk,--keyspace-keyspace                              AWS Keyspace storage 'keyspace'. If query will be provided this value will be ignored.
+      -kp,--keyspace-pages-to-skip                         AWS Keyspace pages to skip.
+      -kq,--keyspace-query                                 AWS Keyspace data fetching query. Will ignoring keyspace.table if this value provided.
+      -kquewt,--keyspace-wait-item-in-queue-mins           AWS Keyspace operations wait records in queue time in minutes (15 min).
+      -krate,--keyspace-update-rate-limiter-per-sec        AWS Keyspace modify rate limiter (500!).
+      -kt,--keyspace-table                                 AWS Keyspace storage 'table'. If query will be provided this value will be ignored.
+      -kthrds,--keyspace-write-thread-counts               AWS Keyspace write (restore/reinsert/delete) threads count (default 8).
+      -kttl,--keyspace-reinsert-ttl-value                  AWS Keyspace reinsert ttl value (15552000 = 1y).
+      -s3b,--s3-bucket                                     AWS S3 bucket.
+      -s3f,--s3-folder                                     AWS S3 folder (object prefix in bucket).
+      -s3r,--s3-region                                     AWS S3 bucket region.
+      -s3res,--s3-restore-from-csv-key                     AWS S3 file key to to restore from bucket (full path in bucket).
+      -s3suf,--s3-store-file-suffix                        AWS S3 file to store suffix (<timestamp>_<suffix>.csv).
+      -statheadr,--stat-reprint-header-after-seconds       Statistic header reprinting after seconds.
+      -statline,--stat-print-in-new-line-after-secs        Statistic new line printing after seconds.
+      -statstop,--stat-print-stop-after-no-changes-secs    Statistic printing stopping after not changes found.
+      -stattime,--stat-update-timeout-in-mills             Statistic line refresh timeout in milliseconds.
 
-
-Example startup command with default arguments 
+Example startup command with default arguments
 
       java -jar keystore-backup.jar \
       -kq "select field,userid,deviceid,date,hour,minute,timestamp from my_keyspace.my_table where timestamp >= '2021-01-01T00:00:00.000Z' and timestamp < '2022-01-01T00:00:00.000Z' ALLOW FILTERING" \

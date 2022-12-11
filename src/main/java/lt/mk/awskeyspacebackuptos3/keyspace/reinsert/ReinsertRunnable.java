@@ -11,15 +11,17 @@ import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import lt.mk.awskeyspacebackuptos3.State;
 
 class ReinsertRunnable implements Runnable {
 
-	public static final int WAITING_NEW_ITEM_TIMEOUT = 5;
-	public static final int EMPTY_RESPONSE_COUNT = 10;
 	private final CqlSession session;
 	private final List<String> primaryKeys;
 	private final List<String> header;
@@ -32,16 +34,21 @@ class ReinsertRunnable implements Runnable {
 
 	private final RateLimiter rateLimiter;
 	private Map<String, Term> headerMap;
+	private final long waitingNewItemTimeoutInMinutes;
+
+	private final BooleanSupplier dataPopulationIsNotFinished;
 
 	ReinsertRunnable(CqlSession session, List<String> primaryKeys, List<String> header, ReQueue queue, LongAdder linesProcessed, String keyspaceName, String tableName,
 			int ttl,
-			RateLimiter rateLimiter) {
+			RateLimiter rateLimiter, long waitingNewItemTimeoutInMinutes, BooleanSupplier dataPopulationIsNotFinished) {
 		this.session = session;
 		this.primaryKeys = new ArrayList<>(primaryKeys);
 		this.header = new ArrayList<>(header);
 		this.queue = queue;
 		this.linesProcessed = linesProcessed;
 		this.rateLimiter = rateLimiter;
+		this.waitingNewItemTimeoutInMinutes = waitingNewItemTimeoutInMinutes;
+		this.dataPopulationIsNotFinished = dataPopulationIsNotFinished;
 		this.emptyCounter = new LongAdder();
 		this.ttl = ttl;
 		this.keyspaceName = keyspaceName;
@@ -69,10 +76,10 @@ class ReinsertRunnable implements Runnable {
 				} else {
 					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println(this.emptyCounter.intValue() + "no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + " no records " + Thread.currentThread().getName());
 					System.out.println();
 
-					if (this.emptyCounter.intValue() > EMPTY_RESPONSE_COUNT) {
+					if (!this.dataPopulationIsNotFinished.getAsBoolean()) {
 						break;
 					}
 				}
@@ -113,15 +120,14 @@ class ReinsertRunnable implements Runnable {
 
 	private void buildBatch(PreparedStatement delete, PreparedStatement insert, BatchStatementBuilder builder) {
 		for (int i = 0; i < 14; i++) {
-			Optional<Object[]> arg = queue.poll();
-			if (arg.isEmpty() && i == 0) {
-				System.out.println("Finished delete");
-				break;
-			}
+			Optional<Object[]> arg = queue.poll(this.waitingNewItemTimeoutInMinutes);
 			if (arg.isPresent()) {
 				builder.addStatement(delete.bind(deleteArgs(arg.get())));
 				builder.addStatement(insert.bind(insertArgs(arg.get())));
 				linesProcessed.increment();
+			} else {
+				System.out.println("Empty reinsert queue");
+				break;
 			}
 		}
 	}

@@ -70,15 +70,12 @@ public class DataFetcher implements Statistical {
 			put(StringUtils.join(head.toArray(), DELIMITER));
 
 			thread = ThreadUtil.newThread(() -> {
-//				PreparedStatement statement = sessionProvider.getSession().prepare(query);
-//				SimpleStatement statement = SimpleStatement.newInstance(query).setPageSize(80_000);
-//				BatchStatement statement = BatchStatement.newInstance(BatchType.UNLOGGED).setPageSize(80_000);
-//				CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(statement);
-				CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(query);
+				CompletionStage<AsyncResultSet> futureRs = sessionProvider.getReadingSession().executeAsync(query);
 				futureRs.whenComplete((rs, t) -> putInQueuePage(rs, t, head));
 
 				waitLatch();
 				System.out.println("Data fetching finished.");
+				sessionProvider.closeReadingSession();
 			}, "KeyspaceDataFetcher");
 			thread.start();
 		}
@@ -121,6 +118,8 @@ public class DataFetcher implements Statistical {
 
 			if (errorPagesCounter.intValue() < 50 && rs != null && rs.hasMorePages()) {
 				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+			} else {
+				latch.countDown();
 			}
 			throw e;
 		}

@@ -13,7 +13,7 @@ public class AwsKeyspaceReinsertAction extends ActionInThread {
 
 	@Override
 	public void execute() {
-		reinsertDataInvoker.startR();
+		reinsertDataInvoker.startReinserting();
 	}
 
 }

@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.RateLimiter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletionStage;
@@ -43,11 +44,7 @@ public class DeleteInvoker implements Statistical {
 	private List<String> primaryKeys;
 	private final ArrayBlockingQueue<Object[]> queue;
 	private RateLimiter rateLimiter;
-	private Thread deletingQuery1;
-	private Thread deletingQuery2;
-	private Thread deletingQuery3;
-	private Thread deletingQuery4;
-	private Thread deletingQuery5;
+	private List<Thread> deletingThreads = new ArrayList<>();
 
 	public DeleteInvoker(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
 			TablePrimaryKeyReader tablePrimaryKeyReader) {
@@ -77,11 +74,6 @@ public class DeleteInvoker implements Statistical {
 			startDeleteQuery();
 
 			loadingQuery.start();
-			deletingQuery1.start();
-			deletingQuery2.start();
-			deletingQuery3.start();
-			deletingQuery4.start();
-			deletingQuery5.start();
 
 			System.out.println("delete started");
 		}
@@ -100,25 +92,38 @@ public class DeleteInvoker implements Statistical {
 		System.out.println("Build query: " + query);
 
 		loadingQuery = ThreadUtil.newThread(() -> {
-			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getSession().executeAsync(query);
-			futureRs.whenComplete((rs, t) -> putInQueuePage(rs, t, head));
+			CompletionStage<AsyncResultSet> futureRs = sessionProvider.getReadingSession().executeAsync(query);
+			futureRs.whenComplete(this::putInQueuePage);
 			waitLatch();
+			sessionProvider.closeReadingSession();
 			System.out.println("Data fetching finished.");
 		}, "KeyspaceDataFetcher");
 
 	}
 
 	private void startDeleteQuery() {
-		deletingQuery1 = ThreadUtil.newThread(createRunnable(), "deletingQuery1");
-		deletingQuery2 = ThreadUtil.newThread(createRunnable(), "deletingQuery2");
-		deletingQuery3 = ThreadUtil.newThread(createRunnable(), "deletingQuery3");
-		deletingQuery4 = ThreadUtil.newThread(createRunnable(), "deletingQuery4");
-		deletingQuery5 = ThreadUtil.newThread(createRunnable(), "deletingQuery5");
+		deletingThreads.clear();
+		for (int i = 0; i < conf.writeThreadsCount; i++) {
+			deletingThreads.add(ThreadUtil.newThreadStart(createDeleteRunnable(), "deleting-thread-" + i));
+
+		}
+
+		ThreadUtil.newThreadStart(() -> {
+			while (getDeleteThreadsCount() > 0) {
+				ThreadUtil.sleep3s();
+			}
+			sessionProvider.closeWriteSession();
+		}, "reinsert-session-closeable");
+	}
+
+	public long getDeleteThreadsCount() {
+		return deletingThreads.stream().filter(Thread::isAlive).count();
 	}
 
 
-	private Runnable createRunnable() {
-		return new DeleteRunnable(queryBuilder, sessionProvider.getSession2(), primaryKeys, queue, linesDeleted, this.rateLimiter);
+	private Runnable createDeleteRunnable() {
+		return new DeleteRunnable(queryBuilder, sessionProvider.getWriteSession(), primaryKeys, queue, linesDeleted, this.rateLimiter, conf.deleteBatchSize,
+				conf.wantInQueueNewItemTimeoutMinutes, () -> loadingQuery != null && loadingQuery.isAlive() && latch != null && latch.getCount() > 0);
 	}
 
 
@@ -133,7 +138,7 @@ public class DeleteInvoker implements Statistical {
 		this.rateLimiter = RateLimiter.create(conf.rateLimiterPerSec);
 	}
 
-	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
+	private void putInQueuePage(AsyncResultSet rs, Throwable error) {
 		if (State.isShutdown()) {
 			System.out.println("System shutdown");
 			return;
@@ -154,8 +159,7 @@ public class DeleteInvoker implements Statistical {
 			if (emptyPagesCounter.intValue() < conf.countOnEmptyPageReturnsFinish && rs.hasMorePages()) {
 
 				sleepWhileQueueDecrease();
-
-				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+				rs.fetchNextPage().whenComplete(this::putInQueuePage);
 			} else {
 				latch.countDown();
 			}
@@ -163,8 +167,13 @@ public class DeleteInvoker implements Statistical {
 			errorPagesCounter.incrementAndGet();
 			e.printStackTrace();
 
-			if (errorPagesCounter.intValue() < 50 && rs != null && rs.hasMorePages()) {
-				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+			if (errorPagesCounter.intValue() < conf.stopPageFetchingAfterErrorPage && rs != null && rs.hasMorePages()) {
+				sleepWhileQueueDecrease();
+				rs.fetchNextPage().whenComplete(this::putInQueuePage);
+			} else {
+				System.out.println(String.format("After exception finishing errorPagesCounter:%s, rs: %s, hasMorePages: %s",
+						errorPagesCounter.intValue(), rs != null, rs != null && rs.hasMorePages()));
+				latch.countDown();
 			}
 			throw e;
 		}
@@ -228,23 +237,8 @@ public class DeleteInvoker implements Statistical {
 	}
 
 	public void close() {
-		stop(loadingQuery);
-		stop(deletingQuery1);
-		stop(deletingQuery2);
-		stop(deletingQuery3);
-		stop(deletingQuery4);
-		stop(deletingQuery5);
-	}
-
-	private void stop(Thread thread) {
-		try {
-			if (thread != null) {
-				thread.interrupt();
-				thread.stop();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		ThreadUtil.stop(loadingQuery);
+		deletingThreads.forEach(ThreadUtil::stop);
 	}
 
 	@Override

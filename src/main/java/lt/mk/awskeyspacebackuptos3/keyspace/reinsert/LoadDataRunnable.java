@@ -40,12 +40,18 @@ public class LoadDataRunnable implements Runnable {
 	@Override
 	public void run() {
 		CompletionStage<AsyncResultSet> futureRs = this.session.executeAsync(query);
-		futureRs.whenComplete((rs, t) -> putInQueuePage(rs, t, header));
+		futureRs.whenComplete(this::putInQueuePage);
 		waitLatch();
 		System.out.println("Data fetching finished.");
+
+		try {
+			this.session.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
-	private void putInQueuePage(AsyncResultSet rs, Throwable error, List<String> head) {
+	private void putInQueuePage(AsyncResultSet rs, Throwable error) {
 
 		try {
 			KeyspaceUtil.checkError(error, pageCounter.get(), rs);
@@ -60,7 +66,7 @@ public class LoadDataRunnable implements Runnable {
 
 				queue.sleepWhileQueueDecrease();
 
-				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+				rs.fetchNextPage().whenComplete(this::putInQueuePage);
 			} else {
 				latch.countDown();
 			}
@@ -69,14 +75,16 @@ public class LoadDataRunnable implements Runnable {
 			e.printStackTrace();
 
 			if (errorPagesCounter.intValue() < 50 && rs != null && rs.hasMorePages()) {
-				rs.fetchNextPage().whenComplete((rs1, t1) -> putInQueuePage(rs1, t1, head));
+				rs.fetchNextPage().whenComplete(this::putInQueuePage);
+			} else {
+				latch.countDown();
 			}
 			throw e;
 		}
 	}
 
 	private void waitLatch() {
-			ThreadUtil.await(latch,5, TimeUnit.DAYS);
+		ThreadUtil.await(latch, 5, TimeUnit.DAYS);
 	}
 
 	private Object[] args(Row raw) {
