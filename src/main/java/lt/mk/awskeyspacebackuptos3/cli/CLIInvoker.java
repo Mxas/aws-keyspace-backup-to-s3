@@ -1,7 +1,10 @@
 package lt.mk.awskeyspacebackuptos3.cli;
 
+import java.io.File;
+import java.io.PrintStream;
 import lt.mk.awskeyspacebackuptos3.SingletonManager;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.Menu;
+import org.apache.commons.lang3.StringUtils;
 
 public class CLIInvoker {
 
@@ -14,6 +17,8 @@ public class CLIInvoker {
 	}
 
 	public void run() {
+		checkOutputStream();
+
 		//backup, restore, reinsert, delete
 		switch (config.command) {
 			case "backup":
@@ -35,5 +40,22 @@ public class CLIInvoker {
 		}
 
 		manager.getStatisticPrinter().iniStatPrinting();
+	}
+
+	private void checkOutputStream() {
+		if (StringUtils.isNotBlank(config.outputFilePath)) {
+//			try {
+//				File file = new File(config.outputFilePath);
+//				if (!file.exists()) {
+//					file.createNewFile();
+//				}
+//				//Instantiating the PrintStream class
+//				PrintStream stream = new PrintStream(file);
+//				System.out.println("From now on " + file.getAbsolutePath() + " will be your console");
+//				System.setOut(stream);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+		}
 	}
 }

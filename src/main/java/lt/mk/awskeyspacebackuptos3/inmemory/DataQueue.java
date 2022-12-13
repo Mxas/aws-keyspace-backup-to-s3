@@ -9,20 +9,31 @@ import lt.mk.awskeyspacebackuptos3.thread.ThreadUtil;
 public class DataQueue {
 
 	private final ArrayBlockingQueue<String> queue;
+	private final InMemory config;
+	private boolean finished = false;
 
 	public DataQueue(InMemory config) {
-		queue = new ArrayBlockingQueue<>(config.queueSize);
+		this.config = config;
+		queue = new ArrayBlockingQueue<>(this.config.queueSize);
 	}
 
 	public Optional<String> poll() {
-		return ThreadUtil.wrap(() -> queue.poll(3, TimeUnit.MINUTES));
+		return ThreadUtil.wrap(() -> queue.poll(config.waitInQueueNewItemInSeconds, TimeUnit.SECONDS));
 	}
 
 	public void put(String line) {
-		ThreadUtil.wrap(()->	queue.put(line));
+		ThreadUtil.wrap(() -> queue.put(line));
 	}
 
 	public int size() {
 		return queue.size();
+	}
+
+	public void dataLoadingFinished() {
+		this.finished = true;
+	}
+
+	public boolean isFinished() {
+		return finished && queue.size() == 0;
 	}
 }

@@ -49,20 +49,8 @@ public class StatisticPrinter {
 		checkForFinishing();
 	}
 
-	private void checkForReprintHeader() {
-		if (Duration.between(lastPrintedHeader, LocalDateTime.now()).getSeconds() > config.printHeaderAfterSeconds) {
-			printEmpty();
-			printHeader();
-		} else {
-			if (Duration.between(lastNewLinePrinted, LocalDateTime.now()).getSeconds() > config.printStatNewLineAfterSeconds) {
-				lastNewLinePrinted = LocalDateTime.now();
-				System.out.println();
-			}
-		}
-	}
-
 	private void checkForFinishing() {
-		if (Duration.between(lastNewLinePrinted, LocalDateTime.now()).getSeconds()  > config.stopStatsPrintingAfterNotChangedSeconds) {
+		if (Duration.between(lastStatPrinted, LocalDateTime.now()).getSeconds() > config.stopStatsPrintingAfterNotChangedSeconds) {
 			System.out.println("Stoppling statistics timer...");
 			close();
 		}
@@ -87,6 +75,18 @@ public class StatisticPrinter {
 			this.lastPrintedLine = line;
 			System.out.print("\r" + line);
 			lastStatPrinted = LocalDateTime.now();
+		}
+	}
+
+	private void checkForReprintHeader() {
+		if (Duration.between(lastPrintedHeader, LocalDateTime.now()).getSeconds() > config.printHeaderAfterSeconds) {
+			printEmpty();
+			printHeader();
+		} else {
+			if (Duration.between(lastNewLinePrinted, LocalDateTime.now()).getSeconds() > config.printStatNewLineAfterSeconds) {
+				lastNewLinePrinted = LocalDateTime.now();
+				System.out.println();
+			}
 		}
 	}
 

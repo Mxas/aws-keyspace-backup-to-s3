@@ -17,6 +17,8 @@ public class ConfigurationHolder {
 
 		public String command;
 
+		public String outputFilePath = "output_v1.txt";
+
 		public boolean isMenuDisabled() {
 			return StringUtils.isNotBlank(command);
 		}
@@ -26,7 +28,7 @@ public class ConfigurationHolder {
 
 		public long printStatisticInMillis = 2000;
 		public long printHeaderAfterSeconds = 600;
-		public long printStatNewLineAfterSeconds = 300;
+		public long printStatNewLineAfterSeconds = 30;
 		public int stopStatsPrintingAfterNotChangedSeconds = 1000;
 	}
 
@@ -59,6 +61,7 @@ public class ConfigurationHolder {
 
 		public int queueSize = 500_000;
 		public int singleStreamSizeInMB = 200;
+		public long waitInQueueNewItemInSeconds = 180;
 	}
 
 	public class S3 {

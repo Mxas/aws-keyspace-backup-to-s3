@@ -39,6 +39,9 @@ public enum ConfigsDocs {
 	ims("in-memory-stream-size-mb", "In memory buffered stream size in MB. If AWS s3 storage will be used, then this size will be one multi part size value in MB.",
 			(c, s) -> c.memory.singleStreamSizeInMB = Integer.parseInt(s), c -> String.valueOf(
 			c.memory.singleStreamSizeInMB)),
+	imtimeout("in-memory-queue-poll-timeout-secs", "In memory buffered stream size building from queue polling timeout in seconds.",
+			(c, s) -> c.memory.waitInQueueNewItemInSeconds = Integer.parseInt(s), c -> String.valueOf(
+			c.memory.waitInQueueNewItemInSeconds)),
 	s3b("s3-bucket", "AWS S3 bucket.", (c, s) -> c.s3.bucket = s, c -> c.s3.bucket),
 	s3f("s3-folder", "AWS S3 folder (object prefix in bucket).", (c, s) -> c.s3.folder = s, c -> c.s3.folder),
 	s3r("s3-region", "AWS S3 bucket region.", (c, s) -> c.s3.region = s, c -> c.s3.region),

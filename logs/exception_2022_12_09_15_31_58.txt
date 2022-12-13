@@ -1,2 +1,0 @@
-2022-12-09T15:31:58.970873800 Data fetching failed in page: 1853
-com.datastax.oss.driver.api.core.connection.ClosedConnectionException: Lost connection to remote peer

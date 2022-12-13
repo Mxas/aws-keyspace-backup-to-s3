@@ -38,11 +38,11 @@ public class StoreToS3Service implements Statistical {
 			if (isThreadActive()) {
 				System.out.println("'StoreToS3' Already running");
 			} else {
-				thread = ThreadUtil.newThread(() -> StartWriteToS3(), "StoreToS3");
-				thread.start();
+				thread = ThreadUtil.newThreadStart(this::StartWriteToS3, "StoreToS3");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+
 		}
 	}
 

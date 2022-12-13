@@ -58,7 +58,7 @@ public class ReinsertDataInvoker implements Statistical {
 			startLoadingQuery();
 			startReinsertingThreads();
 
-			System.out.println("delete started");
+			System.out.println("Reinsert invoked");
 		}
 	}
 

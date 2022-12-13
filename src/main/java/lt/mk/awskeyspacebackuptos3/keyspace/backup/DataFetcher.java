@@ -76,6 +76,7 @@ public class DataFetcher implements Statistical {
 				waitLatch();
 				System.out.println("Data fetching finished.");
 				sessionProvider.closeReadingSession();
+				queue.dataLoadingFinished();
 			}, "KeyspaceDataFetcher");
 			thread.start();
 		}

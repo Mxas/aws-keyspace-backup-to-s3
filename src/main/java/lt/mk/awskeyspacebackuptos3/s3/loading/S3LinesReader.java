@@ -44,6 +44,7 @@ public class S3LinesReader implements Statistical {
 				}
 
 				System.out.println("While file reading done");
+				queue.dataLoadingFinished();
 
 			} catch (Exception e) {
 				e.printStackTrace();
