@@ -46,7 +46,11 @@ public class InsertStatementPreparation {
 				.insertInto(keyspaceName, tableName)
 				.values(headerMap);
 
-		return session.prepare(insert.usingTtl(this.ttl).build());
+		if (this.ttl > 0) {
+			return session.prepare(insert.usingTtl(this.ttl).build());
+		} else {
+			return session.prepare(insert.build());
+		}
 	}
 
 	public BatchStatement buildBatchStatement(List<String> lines) {

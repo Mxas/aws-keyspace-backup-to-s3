@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
 
 class InsertRunnable implements Runnable {
 
-	public static final int EMPTY_RESPONSE_COUNT = 10;
 	private final CqlSession session;
 	private final List<String> header;
 	private final DataQueue queue;
@@ -20,18 +20,20 @@ class InsertRunnable implements Runnable {
 	private final String keyspaceName;
 	private final String tableName;
 	private final int ttl; //6days=518400
-
 	private final RateLimiter rateLimiter;
-	private int batchSize = 30;
+	private final BooleanSupplier dataPopulationIsNotFinished;
+	private final int batchSize;
 
 	InsertRunnable(CqlSession session, List<String> header, DataQueue queue, LongAdder linesProcessed, String keyspaceName, String tableName,
 			int ttl,
-			RateLimiter rateLimiter) {
+			RateLimiter rateLimiter, BooleanSupplier dataPopulationIsNotFinished, int batchSize) {
 		this.session = session;
 		this.header = new ArrayList<>(header);
 		this.queue = queue;
 		this.linesProcessed = linesProcessed;
 		this.rateLimiter = rateLimiter;
+		this.dataPopulationIsNotFinished = dataPopulationIsNotFinished;
+		this.batchSize = batchSize;
 		this.emptyCounter = new LongAdder();
 		this.ttl = ttl;
 		this.keyspaceName = keyspaceName;
@@ -54,10 +56,10 @@ class InsertRunnable implements Runnable {
 				} else {
 					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println(this.emptyCounter.intValue() + "no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + " no records to restore" + Thread.currentThread().getName());
 					System.out.println();
 
-					if (this.emptyCounter.intValue() > EMPTY_RESPONSE_COUNT) {
+					if (!this.dataPopulationIsNotFinished.getAsBoolean()) {
 						break;
 					}
 				}
@@ -73,7 +75,7 @@ class InsertRunnable implements Runnable {
 		List<String> lines = new ArrayList<>();
 		for (int i = 0; i < batchSize; i++) {
 			Optional<String> line = queue.poll();
-			if (line.isEmpty() && i == 0) {
+			if (line.isEmpty() && queue.isFinished()) {
 				System.out.println("Queue is empty stopping...");
 				break;
 			}

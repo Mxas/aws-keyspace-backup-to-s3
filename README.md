@@ -60,7 +60,7 @@ Tool arguments (optional)
       -fs,--fs-result-path                                 Path where to store files locally.
       -imq,--in-memory-queue                               In memory blocking queue rows size.
       -ims,--in-memory-stream-size-mb                      In memory buffered stream size in MB. If AWS s3 storage will be used, then this size will be one multi part size value in MB.
-      -imtime,--in-memory-queue-poll-timeout-secs          In memory buffered stream size building from queue polling timeout in seconds.
+      -imtime,--in-memory-queue-poll-timeout-secs          In memory buffered stream size building from queue polling timeout in seconds. AWS Keyspace operations wait records in queue timeout (600).
       -kdelb,--keyspace-delete-batch-size                  AWS Keyspace delete batch size (aws max30).
       -ke,--keyspace-empty-to-finish                       AWS Keyspace returned empty pages assume as finished (max int).
       -kerrp,--keyspace-stop-after-error-pages-count       AWS Keyspace stop execution after errored/failed pages fetching.
@@ -72,7 +72,7 @@ Tool arguments (optional)
       -kquewt,--keyspace-wait-item-in-queue-mins           AWS Keyspace operations wait records in queue time in minutes (15 min).
       -krate,--keyspace-update-rate-limiter-per-sec        AWS Keyspace modify rate limiter (500!).
       -kthrds,--keyspace-write-thread-counts               AWS Keyspace write (restore/reinsert/delete) threads count (default 8).
-      -kttl,--keyspace-reinsert-ttl-value                  AWS Keyspace reinsert ttl value (15552000 = 1y).
+      -kttl,--keyspace-reinsert-ttl-value                  AWS Keyspace reinsert ttl value (15552000 = 1y). TTL will be not set on reinsert or restore/insert if value will be les then 1.
       -s3b,--s3-bucket                                     AWS S3 bucket.
       -s3f,--s3-folder                                     AWS S3 folder (object prefix in bucket).
       -s3r,--s3-region                                     AWS S3 bucket region.
@@ -109,6 +109,45 @@ Backup command
       --stat-print-stop-after-no-changes-secs 45 \
       --in-memory-queue-poll-timeout-secs 5
 
+Delete command
+
+      java -jar keystore-backup.jar \
+      -command delete \
+      --keyspace-config-file "test.conf" \
+      --keyspace-keyspace my_keyspace \
+      --keyspace-table my_table \
+      --in-memory-queue-poll-timeout-secs 60
+      --keyspace-update-rate-limiter-per-sec 500
+      --stat-print-stop-after-no-changes-secs 125
+
+
+Restore command (ttl 3 minutes)
+
+      java -jar keystore-backup.jar \
+      -command restore \
+      --keyspace-config-file "test.conf" \
+      --keyspace-keyspace my_keyspace \
+      --keyspace-table my_table \
+      --s3-bucket mk-app-test \
+      --s3-region us-east-1 \
+      --s3-restore-from-csv-key /mk-app-test/small-test/my_keyspace/my_table/2022_12_13_09_07_35_all-data.csv \
+      --stat-print-stop-after-no-changes-secs 125 \
+      --in-memory-queue-poll-timeout-secs 15
+      --keyspace-update-rate-limiter-per-sec 500 \
+      --keyspace-reinsert-ttl-value 180
+
+
+Reinsert with TTL command (ttl 3 minutes)
+
+      java -jar keystore-backup.jar \
+      -command reinsert \
+      --keyspace-config-file "test.conf" \
+      --keyspace-keyspace my_keyspace \
+      --keyspace-table my_table \
+      --stat-print-stop-after-no-changes-secs 125 \
+      --in-memory-queue-poll-timeout-secs 15
+      --keyspace-update-rate-limiter-per-sec 500 \
+      --keyspace-reinsert-ttl-value 180
 
 
 TODO:

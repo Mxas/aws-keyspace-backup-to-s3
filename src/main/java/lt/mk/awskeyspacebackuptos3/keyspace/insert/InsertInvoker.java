@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
 import lt.mk.awskeyspacebackuptos3.csv.CsvLine;
 import lt.mk.awskeyspacebackuptos3.inmemory.DataQueue;
@@ -74,11 +75,19 @@ public class InsertInvoker implements Statistical {
 			insertThread.add(t);
 			t.start();
 		}
+
+		ThreadUtil.newThreadStart(() -> {
+			while (getInsertThreadsCount() > 0) {
+				ThreadUtil.sleep3s();
+			}
+			sessionProvider.closeWriteSession();
+		}, "insert-session-closeable");
 	}
 
 	private Runnable createRunnable() {
+		BooleanSupplier dataPopulationIsNotFinished = () -> !queue.isFinished();
 		return new InsertRunnable(sessionProvider.getWriteSession(), getHeaders(), queue, linesProcessed, queryBuilder.getKeyspaceName(), queryBuilder.getTableName(),
-				conf.reinsertTtl, rateLimiter);
+				conf.reinsertTtl, rateLimiter, dataPopulationIsNotFinished, conf.deleteBatchSize);
 	}
 
 	private List<String> getHeaders() {
@@ -103,6 +112,10 @@ public class InsertInvoker implements Statistical {
 
 		insertThread.forEach(ThreadUtil::stop);
 		insertThread.clear();
+	}
+
+	public long getInsertThreadsCount() {
+		return insertThread.stream().filter(Thread::isAlive).count();
 	}
 
 	@Override

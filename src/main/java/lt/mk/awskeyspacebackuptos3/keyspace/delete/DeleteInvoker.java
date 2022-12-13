@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Logger;
 import lt.mk.awskeyspacebackuptos3.State;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.InMemory;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceUtil;
@@ -30,6 +31,7 @@ public class DeleteInvoker implements Statistical {
 
 	private static final Logger LOG = Logger.getLogger(DeleteInvoker.class.getName());
 	private final AwsKeyspaceConf conf;
+	private final InMemory inMemoryConf;
 	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;
 	private final TableHeaderReader tableHeaderReader;
@@ -46,9 +48,10 @@ public class DeleteInvoker implements Statistical {
 	private RateLimiter rateLimiter;
 	private List<Thread> deletingThreads = new ArrayList<>();
 
-	public DeleteInvoker(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
+	public DeleteInvoker(AwsKeyspaceConf conf, InMemory inMemoryConf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
 			TablePrimaryKeyReader tablePrimaryKeyReader) {
 		this.conf = conf;
+		this.inMemoryConf = inMemoryConf;
 		this.queryBuilder = queryBuilder;
 		this.sessionProvider = sessionProvider;
 		this.tableHeaderReader = tableHeaderReader;
@@ -123,7 +126,7 @@ public class DeleteInvoker implements Statistical {
 
 	private Runnable createDeleteRunnable() {
 		return new DeleteRunnable(queryBuilder, sessionProvider.getWriteSession(), primaryKeys, queue, linesDeleted, this.rateLimiter, conf.deleteBatchSize,
-				conf.wantInQueueNewItemTimeoutMinutes, () -> loadingQuery != null && loadingQuery.isAlive() && latch != null && latch.getCount() > 0);
+				inMemoryConf.waitInQueueNewItemInSeconds, () -> loadingQuery != null && loadingQuery.isAlive() && latch != null && latch.getCount() > 0);
 	}
 
 

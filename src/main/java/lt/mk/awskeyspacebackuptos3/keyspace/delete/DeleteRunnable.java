@@ -32,18 +32,18 @@ class DeleteRunnable implements Runnable {
 	private final LongAdder emptyCounter;
 	private final RateLimiter rateLimiter;
 	private final int batchSize;
-	private final long wantInQueueNewItemTimeoutMinutes;
+	private final long waitInQueueNewItemInSeconds;
 	private final BooleanSupplier dataPopulationIsNotFinished;
 
 	DeleteRunnable(KeyspaceQueryBuilder queryBuilder, CqlSession session, List<String> primaryKeys, ArrayBlockingQueue<Object[]> queue, LongAdder linesDeleted,
-			RateLimiter rateLimiter, int batchSize, long wantInQueueNewItemTimeoutMinutes, BooleanSupplier dataPopulationIsNotFinished) {
+			RateLimiter rateLimiter, int batchSize, long waitInQueueNewItemInSeconds, BooleanSupplier dataPopulationIsNotFinished) {
 		this.queryBuilder = queryBuilder;
 		this.session = session;
 		this.primaryKeys = primaryKeys;
 		this.queue = queue;
 		this.linesDeleted = linesDeleted;
 		this.batchSize = batchSize;
-		this.wantInQueueNewItemTimeoutMinutes = wantInQueueNewItemTimeoutMinutes;
+		this.waitInQueueNewItemInSeconds = waitInQueueNewItemInSeconds;
 		this.dataPopulationIsNotFinished = dataPopulationIsNotFinished;
 		this.emptyCounter = new LongAdder();
 		this.rateLimiter = rateLimiter;
@@ -64,7 +64,7 @@ class DeleteRunnable implements Runnable {
 				} else {
 					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println(this.emptyCounter.intValue() + " no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + " no records to delete " + Thread.currentThread().getName());
 					System.out.println();
 
 					if (!this.dataPopulationIsNotFinished.getAsBoolean()) {
@@ -101,6 +101,6 @@ class DeleteRunnable implements Runnable {
 	}
 
 	public Optional<Object[]> poll() {
-		return ThreadUtil.wrap(() -> queue.poll(this.wantInQueueNewItemTimeoutMinutes, TimeUnit.MINUTES));
+		return ThreadUtil.wrap(() -> queue.poll(this.waitInQueueNewItemInSeconds, TimeUnit.SECONDS));
 	}
 }

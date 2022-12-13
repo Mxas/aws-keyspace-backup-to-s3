@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.logging.Logger;
 import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.AwsKeyspaceConf;
+import lt.mk.awskeyspacebackuptos3.config.ConfigurationHolder.InMemory;
 import lt.mk.awskeyspacebackuptos3.keyspace.CqlSessionProvider;
 import lt.mk.awskeyspacebackuptos3.keyspace.KeyspaceQueryBuilder;
 import lt.mk.awskeyspacebackuptos3.keyspace.TableHeaderReader;
@@ -19,6 +20,8 @@ public class ReinsertDataInvoker implements Statistical {
 
 	private static final Logger LOG = Logger.getLogger(ReinsertDataInvoker.class.getName());
 	private final AwsKeyspaceConf conf;
+
+	private final InMemory inMemoryConf;
 	private final KeyspaceQueryBuilder queryBuilder;
 	private final CqlSessionProvider sessionProvider;
 	private final TableHeaderReader tableHeaderReader;
@@ -36,9 +39,10 @@ public class ReinsertDataInvoker implements Statistical {
 	private RateLimiter rateLimiter;
 
 
-	public ReinsertDataInvoker(AwsKeyspaceConf conf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
+	public ReinsertDataInvoker(AwsKeyspaceConf conf, InMemory inMemoryConf, KeyspaceQueryBuilder queryBuilder, CqlSessionProvider sessionProvider, TableHeaderReader tableHeaderReader,
 			TablePrimaryKeyReader tablePrimaryKeyReader) {
 		this.conf = conf;
+		this.inMemoryConf = inMemoryConf;
 		this.queryBuilder = queryBuilder;
 		this.sessionProvider = sessionProvider;
 		this.tableHeaderReader = tableHeaderReader;
@@ -102,7 +106,7 @@ public class ReinsertDataInvoker implements Statistical {
 		BooleanSupplier dataPopulationIsNotFinished = () -> loadingQuery != null && loadingQuery.isAlive();
 		return ThreadUtil.newThreadStart(
 				new ReinsertRunnable(sessionProvider.getWriteSession(), primaryKeys, header, queue, linesReinserted, queryBuilder.getKeyspaceName(),
-						queryBuilder.getTableName(), conf.reinsertTtl, rateLimiter, conf.wantInQueueNewItemTimeoutMinutes, dataPopulationIsNotFinished),
+						queryBuilder.getTableName(), conf.reinsertTtl, rateLimiter, inMemoryConf.waitInQueueNewItemInSeconds, dataPopulationIsNotFinished),
 				"reinserting-thread-" + i);
 	}
 

@@ -34,20 +34,20 @@ class ReinsertRunnable implements Runnable {
 
 	private final RateLimiter rateLimiter;
 	private Map<String, Term> headerMap;
-	private final long waitingNewItemTimeoutInMinutes;
+	private final long waitInQueueNewItemInSeconds;
 
 	private final BooleanSupplier dataPopulationIsNotFinished;
 
 	ReinsertRunnable(CqlSession session, List<String> primaryKeys, List<String> header, ReQueue queue, LongAdder linesProcessed, String keyspaceName, String tableName,
 			int ttl,
-			RateLimiter rateLimiter, long waitingNewItemTimeoutInMinutes, BooleanSupplier dataPopulationIsNotFinished) {
+			RateLimiter rateLimiter, long waitInQueueNewItemInSeconds, BooleanSupplier dataPopulationIsNotFinished) {
 		this.session = session;
 		this.primaryKeys = new ArrayList<>(primaryKeys);
 		this.header = new ArrayList<>(header);
 		this.queue = queue;
 		this.linesProcessed = linesProcessed;
 		this.rateLimiter = rateLimiter;
-		this.waitingNewItemTimeoutInMinutes = waitingNewItemTimeoutInMinutes;
+		this.waitInQueueNewItemInSeconds = waitInQueueNewItemInSeconds;
 		this.dataPopulationIsNotFinished = dataPopulationIsNotFinished;
 		this.emptyCounter = new LongAdder();
 		this.ttl = ttl;
@@ -76,7 +76,7 @@ class ReinsertRunnable implements Runnable {
 				} else {
 					this.emptyCounter.increment();
 					System.out.println();
-					System.out.println(this.emptyCounter.intValue() + " no records " + Thread.currentThread().getName());
+					System.out.println(this.emptyCounter.intValue() + " no records to reinsert " + Thread.currentThread().getName());
 					System.out.println();
 
 					if (!this.dataPopulationIsNotFinished.getAsBoolean()) {
@@ -120,7 +120,7 @@ class ReinsertRunnable implements Runnable {
 
 	private void buildBatch(PreparedStatement delete, PreparedStatement insert, BatchStatementBuilder builder) {
 		for (int i = 0; i < 14; i++) {
-			Optional<Object[]> arg = queue.poll(this.waitingNewItemTimeoutInMinutes);
+			Optional<Object[]> arg = queue.poll(this.waitInQueueNewItemInSeconds);
 			if (arg.isPresent()) {
 				builder.addStatement(delete.bind(deleteArgs(arg.get())));
 				builder.addStatement(insert.bind(insertArgs(arg.get())));

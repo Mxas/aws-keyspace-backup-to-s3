@@ -9,7 +9,7 @@ import lt.mk.awskeyspacebackuptos3.statistic.StatProvider;
 
 public class InsertStatistic implements StatProvider {
 
-	private static final String[] COLUMNS = {"Active", "Queue size", "Lines inserted", "Rate"};
+	private static final String[] COLUMNS = {"Active", "Queue size", "Lines inserted", "Threads", "Rate"};
 
 	private final RateCalc rateCalc;
 	private final InsertInvoker invoker;
@@ -36,6 +36,7 @@ public class InsertStatistic implements StatProvider {
 				ofBool(invoker.isThreadActive()),
 				ofNum(invoker.getQueueSize(), 9),
 				ofNum(invoker.getLinesInserted(), 12),
+				ofNum(invoker.getInsertThreadsCount(), 2),
 				ofRate(rateCalc.calcRate()),
 		};
 	}

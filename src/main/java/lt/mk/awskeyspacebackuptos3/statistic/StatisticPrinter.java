@@ -33,7 +33,7 @@ public class StatisticPrinter {
 			printHeader();
 			printLine();
 
-			timer = new Timer("StatisticPrinter");
+			timer = new Timer("MK-StatisticPrinter");
 			timer.schedule(new TimerTask() {
 				public void run() {
 					printLine();

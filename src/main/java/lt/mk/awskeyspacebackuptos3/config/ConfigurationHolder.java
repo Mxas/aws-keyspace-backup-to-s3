@@ -53,7 +53,6 @@ public class ConfigurationHolder {
 
 		public int stopPageFetchingAfterErrorPage = 50;
 		public int deleteBatchSize = 30;
-		public long wantInQueueNewItemTimeoutMinutes = 10;
 	}
 
 

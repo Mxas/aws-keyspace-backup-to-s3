@@ -96,7 +96,7 @@ public class CqlSessionProvider {
 			close(session2);
 			this.session2 = null;
 		}
-
+		System.out.println("Write session closed.");
 	}
 
 	public static void close(CqlSession s) {

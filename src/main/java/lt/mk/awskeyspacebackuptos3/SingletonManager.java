@@ -77,8 +77,8 @@ public class SingletonManager {
 			this.storeToS3Service = new StoreToS3Service(this.s3ClientWrapper, this.streamProvider, this.syncS3MultipartUploader);
 			this.statisticProvider = new StatisticProvider(queue, streamProvider, storeToFile, dataFetcher, storeToS3Service, s3ClientWrapper);
 			this.statisticPrinter = new StatisticPrinter(statisticsRender, configurationHolder.stat);
-			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
-			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
+			this.deleteInvoker = new DeleteInvoker(configurationHolder.keyspace, configurationHolder.memory, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
+			this.reinsertDataInvoker = new ReinsertDataInvoker(configurationHolder.keyspace, configurationHolder.memory, queryBuilder, cqlSessionProvider, tableHeaderReader, tablePrimaryKeyReader);
 			this.s3LinesReader = new S3LinesReader(s3ClientWrapper, queue);
 			this.insertInvoker = new InsertInvoker(configurationHolder.keyspace, queryBuilder, cqlSessionProvider, tableHeaderReader, queue);
 

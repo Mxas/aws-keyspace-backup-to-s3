@@ -40,7 +40,7 @@ public class ReQueue {
 
 
 	public Optional<Object[]> poll(long waitingNewItemTimeoutInMinutes) {
-		return wrap(() -> queue.poll(waitingNewItemTimeoutInMinutes, TimeUnit.MINUTES));
+		return wrap(() -> queue.poll(waitingNewItemTimeoutInMinutes, TimeUnit.SECONDS));
 	}
 
 	public int size() {
